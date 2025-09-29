@@ -1,0 +1,16 @@
+https://www.sciencedirect.com/science/article/pii/S095741742302701X
+
+This article begins by defining what is phishing, and the four step process used by attackers:
+1. Gaining trust - Usually through spoofing websites or pretending to be reputable email addresses
+2. Redirection (Optional) - Using links to redirect users to malicious websites 
+3. Gaining data - Obtaining sensitive data from users via forms in fake websites or replies in emails
+4. Execution - Using the obtained data to perform malicious actions, such as stealing money or installing malware
+
+Although phishing has been studied for more than two decades, it continues to grow in scale and sophistication. 
+The authors argue that effective countermeasures must go beyond technical advancements and also include social, cognitive, educational, and legal perspectives.
+
+The paper surveys major phishing incidents, such as the RSA 2011 breach, Google/Facebook invoice scam, and Twitter 2020 hack, 
+showing how attacks evolved from simple email scams to large-scale operations involving malware and social engineering.
+
+
+https://www.sciencedirect.com/science/article/pii/S2949719124000074

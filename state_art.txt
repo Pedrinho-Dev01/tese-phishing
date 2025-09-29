@@ -1,0 +1,59 @@
+This chapter will detail how the techonologies relevant to this project have evolved.
+
+E-mail and .eml
+
+E-mail, short for electronic mail, is a method of exchanging messages over the internet or computer networks.
+It is one of the most widely used forms of digital communication today, with billions of users worldwide.
+As highlighted by Fernandes (2023), e-mail remains a central medium not only for legitimate communication but also as a 
+primary attack vector exploited by cybercriminals through phishing and malware distribution (Fernandes, 2023).
+
+From a technical perspective, e-mail is structured according to the Internet Message Format (RFC 5322), 
+which defines the standard headers and body content of a message. Individual messages can be stored and exchanged as .eml files, 
+a format that encapsulates the full message including metadata (headers), body text, and attachments using the MIME standard. 
+The .eml format is particularly relevant in research contexts, as it preserves raw information such as authentication results, 
+routing paths, and content features that are useful for forensic analysis and machine learning–based detection approaches (Fernandes, 2023).
+
+As one of the most popular communication tools, e-mail has become a prime target for cyber attacks. 
+Its widespread use, combined with the inherent trust users place in messages that appear legitimate,
+makes e-mail an ideal vector for malicious actors seeking to steal sensitive information, distribute malware, 
+or manipulate recipients into performing certain actions. Among the various threats that exploit e-mail, 
+phishing has emerged as one of the most prevalent and damaging, leveraging social engineering techniques to
+deceive users into revealing credentials, financial information, or other confidential data.
+
+Phishing
+
+Phishing is a type of cyber attack in which an attacker attempts to deceive individuals into providing sensitive information, 
+such as usernames, passwords, or financial details, by masquerading as a trustworthy entity through electronic communication channels, 
+most commonly e-mail. Phishing attacks often employ social engineering tactics, exploiting users’ trust, fear, 
+or curiosity, and can include malicious links, fraudulent websites, or deceptive attachments.
+
+In 2024, according to the Anti-Phishing Working Group (APWG), phishing attacks have been on a decline,
+totaling 3.7 million attacks, down roughly 24% from 2023.
+
+// graph of attacks over time
+
+Although a decrease in attacks is a positive sign, phishing remains a significant threat due to its adaptability and 
+the increasing sophistication of attacks. According to the IC3 2024 FBI report, phishing attacks resulted in the 
+loss of 70 million dollars, clearly showing that phishing is still a relevant threat. 
+(These attacks often coincide with larger data breaches, further magnifying their impact on organizations and individuals.)
+
+To mitigate the threat of phishing, a wide range of technical solutions has been developed. 
+These include email authentication protocols such as SPF, DKIM, and DMARC, which help verify the 
+legitimacy of senders and reduce the likelihood of spoofed messages reaching users’ inboxes. (cite DEROUET20165)
+
+Transport-layer protections like MTA‑STS and TLS reporting further strengthen the security of email delivery, 
+ensuring that messages are transmitted securely between servers and are less vulnerable to interception or tampering.
+
+Additionally, advanced machine learning and deep learning approaches have been increasingly applied to detect phishing attempts. 
+Models can leverage features extracted from email headers, body content, URLs, and attachments, 
+with recent transformer-based architectures and embedding techniques providing state-of-the-art performance in 
+identifying both traditional and sophisticated phishing messages. 
+
+ML Approach
+
+ML and DL approaches have been the subject of extensive research in the context of phishing detection.
+Attackers have been using artificial intelligence to create more convincing phishing emails, and as such, 
+researchers are increasingly focusing on developing robust detection mechanisms that can adapt to evolving threats.
+
+As Fernandes (2023) highlights, traditional machine learning techniques are no longer sufficient to combat the sophisticated nature of modern phishing attacks.
+ML and DL techniques possess the ability to adapt to new and evolving threats, making them well-suited for phishing detection.

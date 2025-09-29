@@ -1,0 +1,5 @@
+This file is used to store extra-curricular activities reports.
+
+25th of September:
+- Attended the LaTeX Lecture by Prof. André Zuquete
+
