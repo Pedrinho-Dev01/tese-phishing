@@ -1,0 +1,113 @@
+\documentclass[11pt,a4paper]{report}
+
+\usepackage[engineering,deti]{uaThesisTemplate}
+
+%% Optional packages for utf8 encoding and T1 fonts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\renewcommand\familydefault{\sfdefault}
+
+%% We will use english and portuguese
+\usepackage[english,portuguese]{babel}
+
+\usepackage{xspace}% used by \sigla
+
+%%% This package is only used to create a dummy
+%%%  text for the abstract. You can remove the
+%%%  following line in the final document.
+%\usepackage{blindtext}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%       DEFINE THESIS COVER FIELDS
+%%                  START
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Thesis Year
+\ThesisYear{\the\year}
+\DocumentTypeDissertation
+
+%% Author's full name
+\Author{Daniel \\ Nascimento Pedrinho}
+
+%% Thesis Mandatory Title in Portuguese
+\TitlePT{Deteção de e-mails de phishing através de padrões linguísticos e de análise sentimentos}
+
+%% Thesis Optional Title in English
+\TitleEN{Phishing email detection through linguistic patterns and sentiment analysis}
+
+%% Supervisor information
+\Supervisor{João Rafael Duarte de Almeida}{auxiliar}
+
+%% Optional SecondSupervisor information
+\SupervisorMember{Sérgio Guilherme Aleixo de Matos}{associado c/ agregação}{do Departamento de Eletrónica, Telecomunicações e Informática}{da Universidade de Aveiro}{}
+
+%% Degree title and name
+\Degree{Mestre}{Engenharia Informática}
+
+%%% Edit the Jury President information.
+%% First Member will be the President of the Jury
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+
+%%% Repeat the above declaration for additional
+%%%  members of the jury as many times as necessary.
+%% Additional members of the Jury
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+\JuriMember{Prof. Doutor João Antunes da Silva}{professor associado da Universidade de Aveiro}
+
+
+
+%%% OPTIONAL: Add an acknowledgement text
+%% Optional Acknowledgement text
+\Acknowledgements{Agradeço toda a ajuda a todos os meus colegas e companheiros.}
+
+%%% Edit the keywords and abstract in Portuguese
+%%% Don't forget to remove the \blindtext[3]
+%%%  declaration.
+%%% Don't remove the \selectlanguage statement or you will end with incorrect hyphenation
+%% Mandatory Keywords and Abstract in Portuguese
+\Abstract{palavras-chave}{texto livro, arquitetura, história, construção, materiais de construção, saber tradicional.}
+         {resumo}{\selectlanguage{portuguese}Um resumo é um pequeno apanhado de um trabalho mais longo (como uma tese, dissertação ou trabalho de pesquisa). O resumo relata de forma concisa os objetivos e resultados da sua pesquisa, para que os leitores saibam exatamente o que se aborda no seu documento.\\Embora a estrutura possa variar um pouco dependendo da sua área de estudo, o seu resumo deve descrever o propósito do seu trabalho, os métodos que você usou e as conclusões a que chegou.\\Uma maneira comum de estruturar um resumo é usar a estrutura IMRaD. Isso significa: \begin{itemize} \item Introdução \item Métodos \item Resultados \item Discussão \end{itemize} Veja mais pormenores aqui:\\\texttt{https://www.scribbr.com/dissertation/abstract/}}
+
+%%% OPTIONAL: you can write the keywords and
+%%%  abstract in other languages. You can repeat
+%%%  the following lines as many times as you want
+%%%  or remove them if you only want portuguese.
+%%% Don't remove the \selectlanguage statement or you will end with incorrect hyphenation.
+%%% You can modify the language to any other supported by Latex
+%% Optional Keywords and Abstract in additional languages.
+\Abstract{keywords}{textbook, architecture, history, construction, construction materials, traditional knowledge.}
+         {abstract}{\selectlanguage{english}An abstract is a short summary of a longer work (such as a thesis, dissertation or research paper).\\The abstract concisely reports the aims and outcomes of your research, so that readers know exactly what your paper is about.\\Although the structure may vary slightly depending on your discipline, your abstract should describe the purpose of your work, the methods you’ve used, and the conclusions you’ve drawn.\\One common way to structure your abstract is to use the IMRaD structure. This stands for: \begin{itemize} \item Introduction \item Methods \item Results \item Discussion \end{itemize} Check for more details here:\\\texttt{https://www.scribbr.com/dissertation/abstract/}}
+
+
+%%% OPTIONAL: Acknowledge the use of AI Tools
+\AIUse{I acknowledge the use of [insert AI system(s) and link] to [specific use of generative artificial intelligence or other tasks].
+I acknowledge the use of [software, codes or platforms] to [specific use software, codes or platforms or to other tasks].
+\newline\newline
+{Example 1: I acknowledge the use of ChatGPT 3.5 (Open AI, https://chat.openai.com) to summarise the initial notes and to proofread the final draft and the use of 
+Office365 (Microsoft, https://www.office.com) for text writing and productivity.}
+\newline\newline
+{Example 2: No content generated by AI technologies has been used in this Thesis.}
+}
+%Reconheço o uso de [inserir sistema(s) de IA e respetiva hiperligação] para [indicar utilização específica de IA ou outras tarefas]. Reconheço a utilização de [indicar software, código ou plataforma] para [indicar utilização específica de software, código ou platafoma ou para outras tarefas].
+%Exemplo 1: Reconheço a utilização do ChatGPT 3.5 (Open AI, https://chat.openai.com) para resumir as notas iniciais e para rever o rascunho final, a utilização do Office365 (Microsoft, https://www.office.com) para a escrita do texto.
+%Exemplo 2: Não foram utilizados no presente trabalho quaisquer conteúdos gerados por tecnologias de IA.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%       DEFINE THESIS COVER FIELDS
+%%                  END
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+\selectlanguage{english}
+
+
+\MakeCover
+\end{document}
