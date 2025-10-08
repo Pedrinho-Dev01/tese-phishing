@@ -1,5 +1,10 @@
 This file contains what has been done on a per-week basis.
 
+6th - 10th of October:
+- Finished writing the state of the art section.
+- Wrote the introduction section.
+- Wrote the abstract and keywords in both Portuguese and English.
+
 29th of September - 3rd of October:
 - Progressed with writing the state of the art section.
 - Read articles introduced in the references.bib file.
