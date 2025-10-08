@@ -63,3 +63,31 @@ Another work, "Comparative Investigation of Traditional Machine-Learning Models 
 
 As such, its clear that a well annotated dataset with sentiment labels, not just positive / negative labels, could provide valuable insights into the emotional manipulation tactics used in phishing emails, and potentially improve detection performance.
 
+\section{Datasets}
+
+A wide variety of datasets have been used in phishing detection research, ranging from legacy corpora to recently curated collections. Classic datasets such as the Enron E-mail Corpus (released in 2004 during litigation) and the SpamAssassin Public Corpus (2002) remain popular for providing large numbers of benign or spam-related messages, though their age and lack of phishing-specific samples limit their representativeness in modern studies \cite{metsis2006spam,klimt2004enron}. Similarly, the Nazario Phishing Corpus (2006) offered one of the earliest phishing-only collections, though its small size (~2,000 messages) and outdated content restrict its usefulness today.    
+
+More recent works leverage community-driven sources such as PhishTank, which provides continuously updated phishing URLs, and the \ac{APWG} eCrime Exchange, which offers large feeds of malicious URLs and e-mails to members. These sources have been central to many detection systems but often lack full .eml message structures, making them less suitable for header or attachment-based analysis \cite{mahmoud2023phishing}.
+
+The limitations of these datasets have driven recent efforts to curate larger, more representative corpora. For example, Champa et al. (2025) compiled seven curated phishing datasets totaling over 200,000 instances, addressing the scarcity of structured corpora for ML research \cite{champa2025curated}. Similarly, Caripoti et al. (2025) proposed E-PhishGen, a framework for generating realistic phishing emails using large language models (LLMs), designed to overcome dataset scarcity and linguistic limitations in prior corpora \cite{caripoti2025ephishgen}. Another recent initiative, the EPVME dataset (2024), introduced by Patra et al., aggregates over 600,000 malicious and benign samples while simulating novel attack vectors and vulnerabilities, offering a large-scale benchmark for modern detection techniques \cite{patra2024epvme}.
+
+In addition, there has been increasing interest in synthetic or augmented datasets, where generative models or adversarial methods are used to produce new phishing e-mails. For instance, Caripoti (2024) created a dataset of over 10,000 phishing and legitimate samples, categorized by attack type (malware, credential harvesting, business email compromise), and showed how synthetic data could improve detection robustness across models \cite{caripoti2024synthetic}.
+
+Together, these efforts reflect a clear evolution: while early works relied on small, static corpora, the current state of the art emphasizes large, diverse, and dynamically updated datasets. These developments also highlight the need for open, realistic .eml-based datasets that preserve the structural, textual, and metadata features of modern phishing campaigns, a gap that motivates the construction of new datasets like the one proposed in this thesis.
+
+\begin{table}[ht]
+\centering
+\caption{Commonly Used Datasets in Phishing Detection Research}
+\label{tab:phishing_datasets}
+\begin{tabular}{|p{3cm}|p{3cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{Dataset / Corpus} & \textbf{Year / Source} & \textbf{Size \& Content} & \textbf{Notes / Usage in Literature} \\ \hline
+Enron E-mail Corpus & Released $\sim$2004 (Enron litigation) & $\sim$500,000 corporate e-mails (benign) & Widely used for legitimate e-mail baseline; not security-focused, language is outdated. \\ \hline
+SpamAssassin Public Corpus & 2002 (Apache SpamAssassin project) & $\sim$6,000 e-mails (spam + ham) & Includes spam, phishing-like, and ham; relatively small, limited diversity. \\ \hline
+Nazario Phishing Corpus & $\sim$2006 (Jose Nazario collection) & $\sim$2,000 phishing e-mails & Historic phishing dataset, small and outdated but influential in early studies. \\ \hline
+PhishTank & Ongoing (community-driven, OpenDNS) & URLs + associated phishing samples & Still widely used, but primarily URL-based; lacks full \texttt{.eml} structure. \\ \hline
+APWG eCrime Exchange & Ongoing (Anti-Phishing Working Group) & Large, dynamic feeds of phishing URLs/e-mails & Research access restricted; provides up-to-date, real-world campaigns. \\ \hline
+Custom / Proprietary Datasets & 2015--present (industry, e.g., Microsoft, Symantec) & Millions of real e-mails, often not public & Used in cutting-edge papers; limited reproducibility for academia. \\ \hline
+Augmented / Synthetic Data & Recent works (2020s) & Varies (often 10k--100k+ samples) & Generated via adversarial text models or heuristics to simulate modern phishing tactics. \\ \hline
+\end{tabular}
+\end{table}
