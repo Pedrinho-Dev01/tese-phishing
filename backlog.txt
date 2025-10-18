@@ -1,5 +1,8 @@
 This file contains what has been done on a per-week basis.
 
+13th - 17th of October:
+- Began writing the code responsibly for calling the LLM API to generate emails.
+
 6th - 10th of October:
 - Finished writing the state of the art section.
 - Wrote the introduction section.
