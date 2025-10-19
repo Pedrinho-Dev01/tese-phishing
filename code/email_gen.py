@@ -8,7 +8,7 @@ from ollama import Client
 TOTAL_EMAILS = 10000
 
 # Load the CSV data
-data = pd.read_csv('base_annotations.csv')
+data = pd.read_csv('code/base_annotations.csv')
 grouped_emails = data.groupby('emotion')['text'].apply(list).to_dict()
 
 # Calculate emails per emotion
@@ -23,7 +23,7 @@ if remaining_emails > 0:
 
 # Initialize Ollama client
 client = Client(
-    host='http://192.168.238.77:8000/',
+    host='http://192.168.238.77:8001/',
     headers={}
 )
 
@@ -77,10 +77,10 @@ Generate only the email content, no additional text or explanations:"""
 
 # Save all generated emails to CSV
 output_df = pd.DataFrame(all_generated_emails)
-output_df.to_csv('generated_10k_emails.csv', index=False)
+output_df.to_csv('code/generated_10_emails.csv', index=False)
 
 print(f"\nCompleted! Generated {len(all_generated_emails)} emails")
-print(f"Results saved to 'generated_10k_emails.csv'")
+print(f"Results saved to 'code/generated_10_emails.csv'")
 
 # Show distribution summary
 emotion_counts = output_df['emotion'].value_counts()
