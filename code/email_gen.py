@@ -77,10 +77,10 @@ Generate only the email content, no additional text or explanations:"""
 
 # Save all generated emails to CSV
 output_df = pd.DataFrame(all_generated_emails)
-output_df.to_csv('code/generated_10_emails.csv', index=False)
+output_df.to_csv('code/generated_10k_emails.csv', index=False)
 
 print(f"\nCompleted! Generated {len(all_generated_emails)} emails")
-print(f"Results saved to 'code/generated_10_emails.csv'")
+print(f"Results saved to 'code/generated_10k_emails.csv'")
 
 # Show distribution summary
 emotion_counts = output_df['emotion'].value_counts()

@@ -4,3 +4,4 @@ latex/test.fls
 latex/test.log
 latex/test.synctex.gz
 *.csv
+*.json

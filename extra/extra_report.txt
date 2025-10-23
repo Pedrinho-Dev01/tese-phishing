@@ -3,3 +3,5 @@ This file is used to store extra-curricular activities reports.
 25th of September:
 - Attended the LaTeX Lecture by Prof. André Zuquete
 
+22nd of October:
+- Attended the 5º Encontro de Computação Avançada
