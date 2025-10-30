@@ -3,6 +3,7 @@ This file contains what has been done on a per-week basis.
 27th - 31st of October:
 - Created a script to automate the creation of Doccano users from a CSV file.
 - Wrote Annotation Guidelines for the Doccano project.
+- Created automated crendential sending via email for Doccano users.
 
 20th - 24th of October:
 - Deployed the Doccano Annotation Tool on a Digital Ocean droplet.
