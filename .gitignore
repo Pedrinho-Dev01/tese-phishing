@@ -6,3 +6,5 @@ latex/test.synctex.gz
 *.csv
 *.json
 user_making/create_doccano_users.py
+__pycache__/
+user_making/send_email.py
