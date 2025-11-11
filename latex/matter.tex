@@ -46,6 +46,7 @@
 % Portuguese will be the default.
 % Uncomment \setlanguage below to change it
 \usepackage[english,portuguese]{babel}
+\selectlanguage{english}
 
 % Uncomment to use a custom date format
 %\usepackage{datetime}
@@ -76,11 +77,11 @@
 \usepackage{hyperref}
 
 % Redefine section names according to your preference
-%\def\sectionautorefname{Section}
-%\def\chapterautorefname{Chapter}
-%\def\figureautorefname{Figure}
-%\def\listingautorefname{Listing}
-%\def\tableautorefname{Table}
+\def\sectionautorefname{Section}
+\def\chapterautorefname{Chapter}
+\def\figureautorefname{Figure}
+\def\listingautorefname{Listing}
+\def\tableautorefname{Table}
 
 % Redefine code boxes
 \ifthenelse{\equal{\useoverleaf}{0}}
@@ -244,7 +245,7 @@
 \setcounter{page}{0}\includepdf[pages=-]{cover.pdf}
 
 % Uncomment to enable English
-%\selectlanguage{english}
+\selectlanguage{english}
 
 
 % Front matter
