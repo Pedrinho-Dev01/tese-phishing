@@ -1,7 +1,8 @@
 This file contains what has been done on a per-week basis.
 
 10th - 14th of November:
-
+- Developed pipeline for model training and evaluation.
+- Trained initial machine learning model on annotated data.
 
 3rd - 7th of November:
 - Consolidated current LaTeX document
