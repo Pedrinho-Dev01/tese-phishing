@@ -10,6 +10,8 @@ import os
 import re
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
@@ -189,45 +191,106 @@ class MLPipeline:
         print(f"Training features shape: {self.X_train_vectorized.shape}")
         print(f"Test features shape: {self.X_test_vectorized.shape}")
         
+        # Add semantic embeddings using SVD for dimensionality reduction
+        print("\nCreating semantic embeddings with SVD...")
+        self.svd = TruncatedSVD(n_components=100, random_state=42)
+        self.X_train_semantic = self.svd.fit_transform(self.X_train_vectorized)
+        self.X_test_semantic = self.svd.transform(self.X_test_vectorized)
+        
+        print(f"Semantic embeddings shape: {self.X_train_semantic.shape}")
+        print(f"Explained variance ratio: {self.svd.explained_variance_ratio_.sum():.4f}")
+        
         return True
     
     def train_models(self):
         """Train unsupervised/clustering models and supervised models for comparison"""
-        print("\nTraining models...")
-        print("Training models WITHOUT access to labels (unsupervised approach)")
+        print("\nTraining multiple clustering models...")
+        print("Using optimized cluster counts and semantic embeddings (unsupervised approach)")
         
         from sklearn.cluster import KMeans
         from sklearn.mixture import GaussianMixture
-        from sklearn.decomposition import LatentDirichletAllocation
         
-        # Unsupervised models that learn patterns from text only
+        # Unsupervised models with optimized cluster counts
+        from sklearn.cluster import DBSCAN, AgglomerativeClustering
+        
+        # Try different cluster counts for different tasks
+        phishing_clusters = 2  # Binary: phishing vs non-phishing
+        emotion_clusters = 4   # Reduced from 8 to capture main emotional patterns
+        
         self.models = {
-            'KMeans Clustering': KMeans(n_clusters=8, random_state=42, n_init=10),  # Assume ~8 emotion categories
-            'Gaussian Mixture': GaussianMixture(n_components=8, random_state=42)
+            # Phishing detection (2 clusters)
+            'KMeans-2': KMeans(n_clusters=phishing_clusters, random_state=42, n_init=10),
+            'Gaussian-2': GaussianMixture(n_components=phishing_clusters, random_state=42),
+            
+            # Emotion detection (4 clusters)
+            'KMeans-4': KMeans(n_clusters=emotion_clusters, random_state=42, n_init=10),
+            'Gaussian-4': GaussianMixture(n_components=emotion_clusters, random_state=42),
+            
+            # Alternative algorithms
+            'DBSCAN': DBSCAN(eps=0.5, min_samples=5),
+            'Hierarchical': AgglomerativeClustering(n_clusters=emotion_clusters)
         }
         
-        # Train unsupervised models
+        # Train unsupervised models with appropriate feature sets
         for name, model in self.models.items():
             print(f"Training {name} (unsupervised)...")
             try:
-                if 'LDA' in name:
-                    # LDA needs non-negative features, use raw counts
-                    from sklearn.feature_extraction.text import CountVectorizer
-                    count_vec = CountVectorizer(max_features=1000, stop_words='english')
-                    X_counts = count_vec.fit_transform(self.X_train)
-                    model.fit(X_counts)
-                    self.lda_vectorizer = count_vec  # Store for later use
-                elif 'Gaussian' in name:
-                    # Gaussian Mixture needs dense arrays
-                    X_dense = self.X_train_vectorized.toarray()
-                    model.fit(X_dense)
+                # Choose appropriate features based on model
+                if 'Gaussian' in name or 'Hierarchical' in name:
+                    # Dense arrays for algorithms that need them
+                    X_train_features = self.X_train_semantic  # Use semantic embeddings
+                    feature_type = "semantic embeddings"
+                elif 'DBSCAN' in name:
+                    # DBSCAN works well with semantic embeddings
+                    X_train_features = self.X_train_semantic
+                    feature_type = "semantic embeddings"
                 else:
-                    model.fit(self.X_train_vectorized)
+                    # Sparse TF-IDF for KMeans
+                    X_train_features = self.X_train_vectorized
+                    feature_type = "TF-IDF sparse"
+                
+                print(f"  Using {feature_type} features")
+                model.fit(X_train_features)
                 print(f"✓ {name} trained successfully")
+                
+                # Analyze cluster quality
+                self._analyze_cluster_quality(model, X_train_features, name)
+                
             except Exception as e:
                 print(f"✗ Error training {name}: {e}")
         
         return True
+    
+    def _analyze_cluster_quality(self, model, X_features, model_name):
+        """Analyze cluster quality using silhouette score and inertia"""
+        try:
+            from sklearn.metrics import silhouette_score
+            
+            if hasattr(model, 'labels_'):
+                # For models like DBSCAN
+                labels = model.labels_
+                n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+            elif hasattr(model, 'predict'):
+                # For models like KMeans, Gaussian Mixture
+                labels = model.predict(X_features)
+                n_clusters = len(set(labels))
+            else:
+                return
+            
+            if n_clusters > 1 and len(set(labels)) > 1:
+                # Calculate silhouette score (higher is better: -1 to 1)
+                sil_score = silhouette_score(X_features, labels)
+                print(f"  Clusters found: {n_clusters}")
+                print(f"  Silhouette score: {sil_score:.4f}")
+                
+                # For KMeans, also show inertia
+                if hasattr(model, 'inertia_'):
+                    print(f"  Inertia (lower is better): {model.inertia_:.2f}")
+            else:
+                print(f"  Warning: Only {n_clusters} clusters found")
+                
+        except Exception as e:
+            print(f"  Could not analyze cluster quality: {e}")
     
     def evaluate_models(self):
         """Evaluate unsupervised models against true labels"""
@@ -242,16 +305,21 @@ class MLPipeline:
             print('='*60)
             
             try:
-                # Get cluster assignments/predictions
-                if 'LDA' in name:
-                    X_test_counts = self.lda_vectorizer.transform(self.X_test)
-                    cluster_pred = model.transform(X_test_counts).argmax(axis=1)
-                elif 'Gaussian' in name:
-                    # Gaussian Mixture needs dense arrays for prediction
-                    X_test_dense = self.X_test_vectorized.toarray()
-                    cluster_pred = model.predict(X_test_dense)
+                # Get cluster assignments using appropriate features
+                if 'Gaussian' in name or 'Hierarchical' in name or 'DBSCAN' in name:
+                    # Use semantic embeddings for these models
+                    X_test_features = self.X_test_semantic
                 else:
-                    cluster_pred = model.predict(self.X_test_vectorized)
+                    # Use TF-IDF for KMeans
+                    X_test_features = self.X_test_vectorized
+                
+                # Get predictions based on model type
+                if hasattr(model, 'labels_') and 'DBSCAN' in name:
+                    # DBSCAN doesn't predict, need to use fit_predict on test data
+                    # For evaluation, we'll use the training labels distribution
+                    cluster_pred = model.fit_predict(X_test_features)
+                else:
+                    cluster_pred = model.predict(X_test_features)
                 
                 self.results[name] = {'cluster_predictions': cluster_pred}
                 
@@ -277,6 +345,11 @@ class MLPipeline:
                         cluster_pred, self.emotion_test, 'emotion'
                     )
                     self.results[name]['emotion_metrics'] = emotion_metrics
+                
+                # Show cluster distribution
+                unique_clusters = len(set(cluster_pred))
+                print(f"\nClusters found in test data: {unique_clusters}")
+                print(f"Cluster distribution: {dict(zip(*np.unique(cluster_pred, return_counts=True)))}")
                 
                 # Evaluate against phishing labels if available  
                 if self.phishing_labels is not None:
@@ -335,12 +408,19 @@ class MLPipeline:
     def generate_summary(self):
         """Generate a summary report of all results"""
         print("\n" + "="*80)
-        print("FINAL RESULTS SUMMARY - UNSUPERVISED LEARNING EVALUATION")
+        print("UNSUPERVISED LEARNING EVALUATION - FINAL RESULTS")
         print("="*80)
+        
+        # Create results directory if it doesn't exist
+        import os
+        os.makedirs('code/results', exist_ok=True)
         
         # Create summary dataframe for emotion classification
         if any('emotion_metrics' in results for results in self.results.values()):
-            print("\nEMOTION CLASSIFICATION RESULTS:")
+            print("\n" + "="*70)
+            print("EMOTION CLASSIFICATION RESULTS")
+            print("="*70)
+            
             emotion_data = []
             for name, results in self.results.items():
                 if 'emotion_metrics' in results:
@@ -355,17 +435,30 @@ class MLPipeline:
                     emotion_data.append(row)
             
             emotion_df = pd.DataFrame(emotion_data)
-            print(emotion_df.to_string(index=False))
             
-            # Create results directory if it doesn't exist
-            import os
-            os.makedirs('code/results', exist_ok=True)
+            # Enhanced table formatting
+            print(f"{'Model':<15} {'ARI':<8} {'F1':<8} {'Precision':<10} {'Accuracy':<10}")
+            print("-" * 60)
+            for _, row in emotion_df.iterrows():
+                print(f"{row['Model']:<15} {row['ARI']:<8} {row['F1']:<8} {row['Precision']:<10} {row['Accuracy']:<10}")
+            
+            # Find and highlight best model
+            best_idx = emotion_df['F1'].astype(float).idxmax()
+            best_model = emotion_df.loc[best_idx]
+            best_f1 = float(best_model['F1'])
+            
+            print("-" * 60)
+            print(f"BEST MODEL: {best_model['Model']} (F1: {best_model['F1']})")
             
             emotion_df.to_csv('code/results/emotion_clustering_results.csv', index=False)
+            print(f"Detailed results: code/results/emotion_clustering_results.csv")
         
         # Create summary dataframe for phishing detection
         if any('phishing_metrics' in results for results in self.results.values()):
-            print("\nPHISHING DETECTION RESULTS:")
+            print("\n" + "="*70)
+            print("PHISHING DETECTION RESULTS")
+            print("="*70)
+            
             phishing_data = []
             for name, results in self.results.items():
                 if 'phishing_metrics' in results:
@@ -380,21 +473,30 @@ class MLPipeline:
                     phishing_data.append(row)
             
             phishing_df = pd.DataFrame(phishing_data)
-            print(phishing_df.to_string(index=False))
-            phishing_df.to_csv('code/results/phishing_clustering_results.csv', index=False)
-        
-        # Find best models
-        if 'emotion_data' in locals():
-            best_emotion_model = emotion_df.loc[emotion_df['F1'].astype(float).idxmax()]
-            print(f"\nBest emotion clustering model: {best_emotion_model['Model']}")
-            print(f"   F1 Score: {best_emotion_model['F1']}")
             
-        if 'phishing_data' in locals():
-            best_phishing_model = phishing_df.loc[phishing_df['F1'].astype(float).idxmax()]
-            print(f"\nBest phishing detection model: {best_phishing_model['Model']}")
-            print(f"   F1 Score: {best_phishing_model['F1']}")
+            # Enhanced table formatting
+            print(f"{'Model':<15} {'ARI':<8} {'F1':<8} {'Precision':<10} {'Accuracy':<10}")
+            print("-" * 60)
+            for _, row in phishing_df.iterrows():
+                print(f"{row['Model']:<15} {row['ARI']:<8} {row['F1']:<8} {row['Precision']:<10} {row['Accuracy']:<10}")
+            
+            # Find and highlight best model
+            best_idx = phishing_df['F1'].astype(float).idxmax()
+            best_model = phishing_df.loc[best_idx]
+            best_f1 = float(best_model['F1'])
+            
+            print("-" * 60)
+            print(f"BEST MODEL: {best_model['Model']} (F1: {best_model['F1']})")
+            
+            phishing_df.to_csv('code/results/phishing_clustering_results.csv', index=False)
+            print(f"Detailed results: code/results/phishing_clustering_results.csv")
         
-        print(f"\n✓ Results saved to CSV files in 'code/results/' directory")
+        # Final summary
+        print("\n" + "="*70)
+        print("SUMMARY COMPLETE")
+        print("="*70)
+        print("All results saved to CSV files in 'code/results/' directory")
+        print("Best models highlighted above for each task")
         
         return True
     
@@ -420,7 +522,7 @@ class MLPipeline:
                 return False
         
         print("\n" + "="*80)
-        print("✓ Pipeline completed successfully!")
+        print("Pipeline completed successfully!")
         print("="*80)
         return True
 
