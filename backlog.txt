@@ -1,5 +1,8 @@
 This file contains what has been done on a per-week basis.
 
+17th - 21st of November:
+- Refined the model pipeline and data preprocessing steps.
+
 10th - 14th of November:
 - Developed pipeline for model training and evaluation.
 - Trained initial machine learning model on annotated data.

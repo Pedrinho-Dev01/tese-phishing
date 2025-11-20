@@ -7,6 +7,7 @@ Splits data, trains models, and evaluates performance
 import pandas as pd
 import numpy as np
 import os
+import re
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -77,6 +78,32 @@ class MLPipeline:
             print(f"Error loading data: {e}")
             return False
     
+    def normalize_text(self, text):
+        """Normalize text by standardizing whitespace and formatting"""
+        if pd.isna(text) or text == '':
+            return ''
+        
+        # Convert to string if not already
+        text = str(text)
+        
+        # Replace multiple whitespaces (including \n, \r, \t) with single space
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Remove leading/trailing whitespace
+        text = text.strip()
+        
+        # Normalize common formatting patterns
+        # Remove extra punctuation spacing
+        text = re.sub(r'\s*([,.!?;:])\s*', r'\1 ', text)
+        
+        # Normalize quotation marks
+        text = re.sub(r'[""''`]', '"', text)
+        
+        # Remove excessive punctuation (more than 2 consecutive)
+        text = re.sub(r'([!?.]){3,}', r'\1\1', text)
+        
+        return text
+    
     def prepare_data(self):
         """Prepare features and store labels for validation only"""
         print("\nPreparing data...")
@@ -84,9 +111,11 @@ class MLPipeline:
         if 'text' not in self.data.columns:
             raise ValueError("No 'text' column found in dataset")
             
-        # Extract text features
-        self.X = self.data['text'].fillna('')
+        # Extract and normalize text features
+        print("Normalizing text to remove formatting differences...")
+        self.X = self.data['text'].apply(self.normalize_text)
         print(f"Features shape: {self.X.shape}")
+        print("✓ Text normalization completed")
         
         # Store labels for validation (but don't use them for training)
         self.emotion_labels = None
@@ -102,10 +131,10 @@ class MLPipeline:
             print(f"Found phishing labels: {self.phishing_labels.value_counts().to_dict()}")
                 
         if self.emotion_labels is None and self.phishing_labels is None:
-            print("⚠️  Warning: No emotion or phishing labels found for validation")
+            print("Warning: No emotion or phishing labels found for validation")
             return False
             
-        print("\n📝 Note: Labels will be used only for validation, not for training")
+        print("\nNote: Labels will be used only for validation, not for training")
         return True
     
     def split_data(self, test_size=0.2, random_state=42):
@@ -139,14 +168,18 @@ class MLPipeline:
     
     def vectorize_text(self, max_features=10000):
         """Convert text to TF-IDF features"""
-        print(f"\nVectorizing text with TF-IDF (max_features={max_features})...")
+        print(f"\nVectorizing normalized text with TF-IDF (max_features={max_features})...")
+        print("Text preprocessing: whitespace normalization, lowercase, alphabetic tokens only")
         
         self.vectorizer = TfidfVectorizer(
             max_features=max_features,
             stop_words='english',
             ngram_range=(1, 2),  # Use unigrams and bigrams
             min_df=2,  # Ignore terms that appear in less than 2 documents
-            max_df=0.95  # Ignore terms that appear in more than 95% of documents
+            max_df=0.95,  # Ignore terms that appear in more than 95% of documents
+            lowercase=True,  # Convert to lowercase
+            token_pattern=r'\b[A-Za-z]{2,}\b',  # Only alphabetic tokens, min 2 chars
+            strip_accents='ascii'  # Remove accents
         )
         
         # Fit on training data and transform both train and test
@@ -161,7 +194,7 @@ class MLPipeline:
     def train_models(self):
         """Train unsupervised/clustering models and supervised models for comparison"""
         print("\nTraining models...")
-        print("🔬 Training models WITHOUT access to labels (unsupervised approach)")
+        print("Training models WITHOUT access to labels (unsupervised approach)")
         
         from sklearn.cluster import KMeans
         from sklearn.mixture import GaussianMixture
@@ -199,7 +232,7 @@ class MLPipeline:
     def evaluate_models(self):
         """Evaluate unsupervised models against true labels"""
         print("\nEvaluating models against TRUE LABELS...")
-        print("🎯 Now we reveal the labels to see how well unsupervised models captured patterns")
+        print("Now we reveal the labels to see how well unsupervised models captured patterns")
         
         self.results = {}
         
@@ -234,12 +267,12 @@ class MLPipeline:
                     model_is_fitted = True  # Assume fitted for other models
                 
                 if not model_is_fitted:
-                    print(f"⚠️  Skipping evaluation - {name} was not successfully trained")
+                    print(f"Skipping evaluation - {name} was not successfully trained")
                     continue
                 
                 # Evaluate against emotion labels if available
                 if self.emotion_labels is not None:
-                    print(f"\n📊 EMOTION CLASSIFICATION EVALUATION:")
+                    print(f"\nEMOTION CLASSIFICATION EVALUATION:")
                     emotion_metrics = self._evaluate_clustering_against_labels(
                         cluster_pred, self.emotion_test, 'emotion'
                     )
@@ -247,7 +280,7 @@ class MLPipeline:
                 
                 # Evaluate against phishing labels if available  
                 if self.phishing_labels is not None:
-                    print(f"\n🎣 PHISHING DETECTION EVALUATION:")
+                    print(f"\nPHISHING DETECTION EVALUATION:")
                     phishing_metrics = self._evaluate_clustering_against_labels(
                         cluster_pred, self.phishing_test, 'phishing'
                     )
@@ -307,7 +340,7 @@ class MLPipeline:
         
         # Create summary dataframe for emotion classification
         if any('emotion_metrics' in results for results in self.results.values()):
-            print("\n📊 EMOTION CLASSIFICATION RESULTS:")
+            print("\nEMOTION CLASSIFICATION RESULTS:")
             emotion_data = []
             for name, results in self.results.items():
                 if 'emotion_metrics' in results:
@@ -332,7 +365,7 @@ class MLPipeline:
         
         # Create summary dataframe for phishing detection
         if any('phishing_metrics' in results for results in self.results.values()):
-            print("\n🎣 PHISHING DETECTION RESULTS:")
+            print("\nPHISHING DETECTION RESULTS:")
             phishing_data = []
             for name, results in self.results.items():
                 if 'phishing_metrics' in results:
@@ -353,12 +386,12 @@ class MLPipeline:
         # Find best models
         if 'emotion_data' in locals():
             best_emotion_model = emotion_df.loc[emotion_df['F1'].astype(float).idxmax()]
-            print(f"\n🏆 Best emotion clustering model: {best_emotion_model['Model']}")
+            print(f"\nBest emotion clustering model: {best_emotion_model['Model']}")
             print(f"   F1 Score: {best_emotion_model['F1']}")
             
         if 'phishing_data' in locals():
             best_phishing_model = phishing_df.loc[phishing_df['F1'].astype(float).idxmax()]
-            print(f"\n🏆 Best phishing detection model: {best_phishing_model['Model']}")
+            print(f"\nBest phishing detection model: {best_phishing_model['Model']}")
             print(f"   F1 Score: {best_phishing_model['F1']}")
         
         print(f"\n✓ Results saved to CSV files in 'code/results/' directory")
@@ -387,7 +420,7 @@ class MLPipeline:
                 return False
         
         print("\n" + "="*80)
-        print("✅ Pipeline completed successfully!")
+        print("✓ Pipeline completed successfully!")
         print("="*80)
         return True
 
