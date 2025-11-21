@@ -122,10 +122,27 @@ class MLPipeline:
         # Store labels for validation (but don't use them for training)
         self.emotion_labels = None
         self.phishing_labels = None
+        self.phishing_emotion_labels = None
         
-        if 'emotion' in self.data.columns:
+        if 'emotion' in self.data.columns and 'label' in self.data.columns:
             self.emotion_labels = self.data['emotion']
-            print(f"Found emotion labels: {self.emotion_labels.value_counts().to_dict()}")
+            self.phishing_labels = self.data['label']
+            
+            # Filter emotions only for phishing emails
+            phishing_mask = self.phishing_labels == 'phishing'
+            self.phishing_emotion_labels = self.emotion_labels[phishing_mask]
+            
+            emotion_counts = self.emotion_labels.value_counts().to_dict()
+            phishing_emotion_counts = self.phishing_emotion_labels.value_counts().to_dict()
+            
+            print(f"Found emotion labels (all emails): {emotion_counts}")
+            print(f"Found emotion labels (phishing only): {phishing_emotion_counts}")
+            print(f"Total unique emotions in phishing emails: {len(phishing_emotion_counts)}")
+            print(f"Phishing emails for emotion analysis: {len(self.phishing_emotion_labels)}")
+            
+            if len(phishing_emotion_counts) > 0:
+                print(f"Most common phishing emotion: {max(phishing_emotion_counts, key=phishing_emotion_counts.get)} ({max(phishing_emotion_counts.values())} samples)")
+                print(f"Least common phishing emotion: {min(phishing_emotion_counts, key=phishing_emotion_counts.get)} ({min(phishing_emotion_counts.values())} samples)")
             
         # Use 'label' column for phishing labels
         if 'label' in self.data.columns:
@@ -162,6 +179,19 @@ class MLPipeline:
         if self.phishing_labels is not None:
             self.phishing_train = self.phishing_labels.iloc[train_idx]
             self.phishing_test = self.phishing_labels.iloc[test_idx]
+            
+        # Split phishing-only emotion labels
+        if self.phishing_emotion_labels is not None:
+            # Create mapping from original indices to phishing-filtered indices
+            phishing_indices = self.data[self.data['label'] == 'phishing'].index
+            phishing_train_mask = np.isin(phishing_indices, train_idx)
+            phishing_test_mask = np.isin(phishing_indices, test_idx)
+            
+            self.phishing_emotion_train = self.phishing_emotion_labels[phishing_train_mask]
+            self.phishing_emotion_test = self.phishing_emotion_labels[phishing_test_mask]
+            
+            print(f"Phishing emotion training samples: {len(self.phishing_emotion_train)}")
+            print(f"Phishing emotion test samples: {len(self.phishing_emotion_test)}")
         
         print(f"Training set size: {len(self.X_train)}")
         print(f"Test set size: {len(self.X_test)}")
@@ -215,16 +245,24 @@ class MLPipeline:
         
         # Try different cluster counts for different tasks
         phishing_clusters = 2  # Binary: phishing vs non-phishing
-        emotion_clusters = 4   # Reduced from 8 to capture main emotional patterns
+        
+        # Check actual number of unique emotions in phishing emails for better clustering
+        if self.phishing_emotion_labels is not None:
+            unique_emotions = len(self.phishing_emotion_labels.unique())
+            print(f"Found {unique_emotions} unique emotions in phishing emails")
+            emotion_clusters = min(unique_emotions, 8)  # Cap at 8 to avoid over-clustering
+            print(f"Using {emotion_clusters} clusters for emotion detection (phishing emails only)")
+        else:
+            emotion_clusters = 4   # Default fallback
         
         self.models = {
             # Phishing detection (2 clusters)
             'KMeans-2': KMeans(n_clusters=phishing_clusters, random_state=42, n_init=10),
             'Gaussian-2': GaussianMixture(n_components=phishing_clusters, random_state=42),
             
-            # Emotion detection (4 clusters)
-            'KMeans-4': KMeans(n_clusters=emotion_clusters, random_state=42, n_init=10),
-            'Gaussian-4': GaussianMixture(n_components=emotion_clusters, random_state=42),
+            # Emotion detection (phishing emails only)
+            f'KMeans-{emotion_clusters}': KMeans(n_clusters=emotion_clusters, random_state=42, n_init=10),
+            f'Gaussian-{emotion_clusters}': GaussianMixture(n_components=emotion_clusters, random_state=42),
             
             # Alternative algorithms
             'DBSCAN': DBSCAN(eps=0.5, min_samples=5),
@@ -338,13 +376,21 @@ class MLPipeline:
                     print(f"Skipping evaluation - {name} was not successfully trained")
                     continue
                 
-                # Evaluate against emotion labels if available
-                if self.emotion_labels is not None:
-                    print(f"\nEMOTION CLASSIFICATION EVALUATION:")
-                    emotion_metrics = self._evaluate_clustering_against_labels(
-                        cluster_pred, self.emotion_test, 'emotion'
-                    )
-                    self.results[name]['emotion_metrics'] = emotion_metrics
+                # Evaluate against emotion labels if available (phishing emails only)
+                if self.phishing_emotion_labels is not None and len(self.phishing_emotion_test) > 0:
+                    print(f"\nEMOTION CLASSIFICATION EVALUATION (PHISHING EMAILS ONLY):")
+                    
+                    # Filter predictions to only phishing emails in test set
+                    phishing_test_mask = self.phishing_test == 'phishing'
+                    if phishing_test_mask.sum() > 0:
+                        phishing_cluster_pred = cluster_pred[phishing_test_mask]
+                        
+                        emotion_metrics = self._evaluate_clustering_against_labels(
+                            phishing_cluster_pred, self.phishing_emotion_test, 'emotion (phishing)'
+                        )
+                        self.results[name]['emotion_metrics'] = emotion_metrics
+                    else:
+                        print("  No phishing emails in test set for emotion evaluation")
                 
                 # Show cluster distribution
                 unique_clusters = len(set(cluster_pred))
