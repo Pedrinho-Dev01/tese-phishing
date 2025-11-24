@@ -1,0 +1,121 @@
+\chapter{Work Proposal}
+
+This chapter outlines the comprehensive work plan for the 2nd semester. 
+
+\section{Work Plan and Timeline}
+
+The project is structured into four main phases, each designed to build upon the previous stage and ensure a systematic approach to development. Each phase is allocated one month for completion, allowing for thorough implementation, testing, and refinement.
+
+\subsection{Phase 1: Phishing Detection Model Development (February 2026)}
+
+The initial phase focuses on developing a robust classification model capable of detecting phishing emails based on linguistic characteristics extracted from the text content. Leveraging the existing dataset, this phase includes:
+
+\begin{itemize}
+    \item Dataset Analysis and Preprocessing: Conducting exploratory data analysis on the existing dataset to understand its characteristics, distribution, and any preprocessing requirements for optimal model performance.
+    
+    \item Feature Engineering: Extracting relevant linguistic features including word frequency patterns, grammatical structures, URL characteristics, sender information patterns, and urgency indicators commonly found in phishing attempts.
+    
+    \item Model Selection and Training: Evaluating multiple machine learning algorithms (such as Naive Bayes, Random Forest, Support Vector Machines, and deep learning approaches) to identify the most effective approach for phishing detection.
+    
+    \item Model Evaluation: Conducting rigorous testing using appropriate metrics (accuracy, precision, recall, F1-score) and cross-validation techniques to ensure model reliability and generalization.
+    
+    \item Hyperparameter Optimization: Fine-tuning model parameters to achieve optimal performance while avoiding overfitting.
+\end{itemize}
+
+\subsection{Phase 2: Sentiment Analysis Model Development (March 2026)}
+
+The second phase concentrates on building a specialized sentiment analysis model designed to identify emotional patterns characteristic of phishing attacks. Working with the existing dataset, this phase encompasses:
+
+\begin{itemize}
+    \item Sentiment Annotation Review: Examining and validating sentiment labels in the existing dataset, ensuring consistency and accuracy for effective model training.
+    
+    \item Emotional Pattern Identification: Analyzing phishing emails to identify common emotional triggers such as urgency, fear, excitement, and authority that attackers exploit.
+    
+    \item Model Architecture Design: Developing a sentiment classification model specifically tailored for email content, potentially utilizing transformer-based architectures or recurrent neural networks.
+    
+    \item Training and Validation: Training the sentiment model on the curated dataset and validating its ability to detect manipulative emotional patterns.
+    
+    \item Integration Planning: Designing the integration architecture to combine sentiment analysis with the phishing detection model for enhanced classification accuracy.
+\end{itemize}
+
+\subsection{Phase 3: Web Application Development (April 2026)}
+
+The third phase involves creating a user-friendly web application that serves as the interface for the phishing detection system. Key activities include:
+
+\begin{itemize}
+    \item Frontend Development: Designing and implementing an intuitive user interface that allows users to upload .eml files or paste email content directly into the application.
+    
+    \item Backend Implementation: Developing the server-side logic to process email content, invoke the classification models, and return results to the user interface.
+    
+    \item Model Integration: Incorporating both the phishing detection and sentiment analysis models into the web application backend, ensuring efficient processing and response times.
+    
+    \item Results Visualization: Creating clear and informative displays of classification results, including phishing probability scores, sentiment analysis outcomes, and explanations of detected suspicious patterns.
+    
+    \item Security Implementation: Ensuring the web application follows security best practices, including input validation, secure file handling, and protection against common web vulnerabilities.
+    
+    \item User Experience Testing: Conducting usability tests to ensure the application is accessible and easy to use for individuals with varying technical backgrounds.
+\end{itemize}
+
+\subsection{Phase 4: Review and Quality Assurance (May 2026)}
+
+The final phase is dedicated to comprehensive review and refinement of all project components. This phase includes:
+
+\begin{itemize}
+    \item System Integration Testing: Performing end-to-end testing of the complete system to identify and resolve any integration issues or performance bottlenecks.
+    
+    \item Model Performance Review: Conducting final evaluations of both models using additional test datasets to verify their effectiveness and reliability in real-world scenarios.
+    
+    \item Documentation Completion: Finalizing all technical documentation, including system architecture descriptions, model specifications, API documentation, and user guides.
+    
+    \item Code Quality Assurance: Reviewing all source code for adherence to best practices, proper documentation, and maintainability.
+    
+    \item Thesis Document Revision: Thoroughly reviewing and editing the written thesis document to ensure coherence, clarity, and academic rigor throughout all chapters.
+    
+    \item Final Presentation Preparation: Preparing materials for the final project presentation, including demonstrations of the web application and discussion of findings and contributions.
+\end{itemize}
+
+\section{Project Timeline}
+
+Figure~\ref{fig:gantt} presents a Gantt chart illustrating the timeline for all project phases. Each phase is allocated one month, ensuring adequate time for implementation, testing, and documentation while maintaining steady progress toward project completion.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{ganttchart}[
+        hgrid,
+        vgrid,
+        x unit=2.5cm,
+        y unit title=0.6cm,
+        y unit chart=0.8cm,
+        title height=1,
+        bar/.style={fill=blue!50},
+        bar height=0.6,
+        group right shift=0,
+        group top shift=0.6,
+        group height=.3,
+        group peaks height=.2
+    ]{1}{4}
+        \gantttitle{Project Timeline (February - May 2026)}{4} \\
+        \gantttitle{Feb}{1}
+        \gantttitle{Mar}{1}
+        \gantttitle{Apr}{1}
+        \gantttitle{May}{1} \\
+        
+        \ganttbar{Phase 1}{1}{1} \\
+        \ganttbar{Phase 2}{2}{2} \\
+        \ganttbar{Phase 3}{3}{3} \\
+        \ganttbar{Phase 4}{4}{4}
+    \end{ganttchart}
+    \caption{Gantt chart depicting the four-month project timeline with sequential phases}
+    \label{fig:gantt}
+\end{figure}
+
+\section{Expected Deliverables}
+
+Upon completion of the project, the following deliverables are anticipated:
+
+\begin{enumerate}
+    \item A trained phishing detection model with documented performance metrics
+    \item A sentiment analysis model specialized for email content analysis
+    \item A functional web application with source code and deployment documentation
+    \item A complete thesis document detailing the research, methodology, implementation, and findings
+\end{enumerate}

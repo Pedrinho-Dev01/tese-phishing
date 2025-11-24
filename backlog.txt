@@ -1,5 +1,9 @@
 This file contains what has been done on a per-week basis.
 
+24th - 28th of November:
+- 2nd semester work proposal development
+- Refinement of the thesis structure and outline.
+
 17th - 21st of November:
 - Refined the model pipeline and data preprocessing steps.
 

@@ -19,7 +19,7 @@ Generate only the email content, no additional text or explanations: \textit{Exa
 
 Using this method, we were able to create a new dataset with 10,000 samples, equatily distributed across the fourteen emotions. This expanded dataset provided a robust foundation for training our machine learning models to accurately classify the emotional content of phishing emails.
 
-Below is an example of a generated email for the emotion "Admiration":
+Below is an example of a generated email for the emotion ``Admiration'':
 
 \begin{tcolorbox}[colback=gray!5, colframe=gray!40, title={Example Email — Admiration}]
 \obeylines
@@ -43,7 +43,27 @@ Warmest regards,
 
 \section{Annotation Guidelines}
 
-To ensure consistency and accuracy in the annotation process, we established a set of guidelines for annotators to follow. These guidelines included a set of general rules as a way to standardize the annotation process and remove ambiguity, as well as specific instructions for each emotion category, including an example of a phrase that would typically express that emotion.
+To ensure consistency and accuracy in the annotation process, we established a comprehensive set of guidelines for annotators to follow when labeling phishing emails with emotional dimensions. These guidelines were designed to standardize the annotation procedure, minimize ambiguity, and facilitate reliable inter-annotator agreement.
+
+\subsection{General Annotation Rules}
+
+The annotation process was governed by four fundamental rules:
+
+\begin{enumerate}
+    \item Multiple label selection: Annotators were instructed that multiple emotional labels could be assigned to a single email. When an email conveyed more than one emotional tone, all applicable emotions were to be selected (e.g., an email might simultaneously evoke both fear and curiosity).
+    
+    \item Mandatory labeling: Every email was required to receive at least one emotional label before being marked as annotated. This rule ensured comprehensive coverage of the dataset and prevented unlabeled instances from remaining in the corpus.
+    
+    \item Uncertainty handling: When annotators could not confidently determine the emotional tone from the email content, they were instructed to select the ``UNSURE'' label. This category served as a safeguard against forced classifications that might compromise data quality.
+    
+    \item Annotation confirmation: After selecting appropriate labels, annotators were required to explicitly mark each email as annotated by pressing Enter or clicking the designated icon before proceeding to the next instance. This step ensured deliberate, complete annotations.
+\end{enumerate}
+
+\subsection{Emotion Category Definitions}
+
+The annotation schema comprised fifteen distinct emotional categories, each with a precise definition and illustrative example drawn from phishing email contexts. The complete taxonomy included: \textit{Confusion}, \textit{Surprise}, \textit{Joy}, \textit{Admiration}, \textit{Curiosity}, \textit{Desire}, \textit{Anger}, \textit{Excitement}, \textit{Embarrassment}, \textit{Relief}, \textit{Sadness}, \textit{Caring}, \textit{Fear}, \textit{Neutral}, and \textit{UNSURE}. Each category was accompanied by a detailed definition specifying the emotional tone or manipulative intent it represented, along with a representative example from phishing email scenarios to guide annotators in recognizing the emotion within realistic contexts.
+
+These guidelines provided annotators with clear decision-making criteria while acknowledging the complex, often multi-dimensional nature of emotional appeals in phishing communications. The framework balanced specificity with flexibility, allowing for nuanced annotation while maintaining consistency across the dataset.
 
 \section{Dataset Annotation}
 

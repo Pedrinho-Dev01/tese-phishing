@@ -23,7 +23,7 @@ In 2024, according to the \ac{APWG}, phishing attacks have been on a decline, to
     \label{fig:phishing_trends}
 \end{figure}
 
-Although a decrease in attacks is a positive sign, phishing remains a significant threat due to its adaptability and the increasing sophistication of attacks. According to the \acs{IC3} 2024 \acs{FBI} report, phishing attacks resulted in the loss of USD 70 million, clearly showing that phishing is still a relevant threat \cite{IC32024}. These attacks often coincide with larger data breaches, further magnifying their impact on organizations and individuals.
+Although a decrease in attacks is a positive sign, phishing remains a significant threat due to its adaptability and the increasing sophistication of attacks. According to the \acs{IC3} 2024 \acs{FBI} report, phishing attacks resulted in the loss of USD 70 million in the US alone, clearly showing that phishing is still a relevant threat \cite{IC32024}. These attacks often coincide with larger data breaches, further magnifying their impact on organizations and individuals.
 
 To mitigate the threat of phishing, a wide range of technical solutions has been developed. 
 These include email authentication protocols such as \ac{SPF}, \ac{DKIM}, and \ac{DMARC}, which help verify the legitimacy of senders and reduce the likelihood of spoofed messages reaching users’ inboxes \cite{DEROUET20165}.
@@ -53,13 +53,13 @@ While most research focuses on technical and structural features of phishing ema
 
 Sentiment analysis involves using \ac{NLP} techniques to identify and extract subjective information from text, such as emotions, opinions, or attitudes. In the context of phishing detection, sentiment analysis can provide insights into the emotional tone and persuasive strategies employed by attackers. This can help cyber security professionals better understand the psychological tactics used, and possibly protect email users from said entity of being targeted by certain tactics, like blackmail.
 
-In previous works, sentiment or tone was occasionally used as one auxiliary signal: existing works might include keyword frequency (urgency / fear words), lexical heuristics (e.g. counts of exclamation marks, imperative mood etc.). However, these were generally simpler, lexicon-based or manually curated features.
+In previous works, sentiment or tone was occasionally used as one auxiliary signal: existing works might include keyword frequency (urgency / fear words) or lexical heuristics (e.g. counts of exclamation marks, imperative mood etc.). However, these were generally simpler, lexicon-based or manually curated features.
 
 Most models prioritized content / URL / header / attachment features, leaving sentiment / emotional tone as a minor axis of research. This, combined with the fact that in many datasets, the emotional manipulation was implicit rather than explicitly annotated, meant that sentiment features were often noisy or under-utilized.
 
 In a recent work, \ac{DistilBERT} was used to extract embeddings that carry sentiment / tone information, that was fed into a classical \ac{SVM}. This was compared to simply using \ac{SVM} by itself, and the results showed that the sentiment-aware model outperformed the baseline by a 3\% margin in F1-score (97\% vs 94\%) \cite{salian2024enhancing}.
 
-Another work, "Comparative Investigation of Traditional Machine-Learning Models and Transformer Models for Phishing Email Detection", explicitly stated that results could be further improved by "incorporating sentiment analysis techniques to detect social-engineering tactics and to better understand the emotional tone and intent behind the email content" \cite{electronics13244877}.
+Another work, ``Comparative Investigation of Traditional Machine-Learning Models and Transformer Models for Phishing Email Detection'', explicitly stated that results could be further improved by "incorporating sentiment analysis techniques to detect social-engineering tactics and to better understand the emotional tone and intent behind the email content" \cite{electronics13244877}.
 
 As such, its clear that a well annotated dataset with sentiment labels, not just positive / negative labels, could provide valuable insights into the emotional manipulation tactics used in phishing emails, and potentially improve detection performance.
 
