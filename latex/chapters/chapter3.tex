@@ -4,9 +4,11 @@ As presented by the previous chapter, the performance of machine learning models
 
 \section{Dataset Creation}
 
-Since for this study we only required a dataset of the email body content labeled for its emotions, we created our own dataset by taking the existing dataset used in \cite{Fernandes2024} and feeding it into a \ac{LLM} to generate a larger dataset. 
+Given the absence of publicly available datasets specifically designed for our phishing email emotion classification, we developed a custom dataset to address this research gap.
 
-The dataset used required no preprocessing, as it was already in a clean, well-structured format tailored for our needs. The dataset consisted of approximately 480 samples of email body content, each labeled with one of fourteen possible emotions.
+This study required a dataset comprising email body content with corresponding emotion labels. We constructed our dataset by leveraging the existing source dataset from \cite{Fernandes2024} as a foundation and using a \ac{LLM} to generate an expanded corpus of annotated samples.
+
+The source dataset was utilized without any preprocessing applied, as it was already in a clean, well-structured format suitable for our research objectives. The source dataset comprised approximately 480 samples of email body content, each annotated with one of fourteen distinct emotional categories.
 
 To create our dataset, we took all emails related to a certain emotion and prompted the Ollama \ac{LLM} to generate additional samples by providing context and examples, using the following prompt template:
 
@@ -17,7 +19,7 @@ Generate only the email content, no additional text or explanations: \textit{Exa
 \end{tcolorbox}
 
 
-Using this method, we were able to create a new dataset with 10,000 samples, equatily distributed across the fourteen emotions. This expanded dataset provided a robust foundation for training our machine learning models to accurately classify the emotional content of phishing emails.
+Using this method, we were able to create a new dataset with 10,000 samples, equally distributed across the fourteen emotions. This expanded dataset provided a robust foundation for training our machine learning models to accurately classify the emotional content of phishing emails.
 
 Below is an example of a generated email for the emotion ``Admiration'':
 
@@ -69,4 +71,4 @@ These guidelines provided annotators with clear decision-making criteria while a
 
 With the dataset created, and guidelines set, we proceeded to annotate the dataset. Given that the dataset was generated using a \ac{LLM} with specific prompts, each sample was inherently labeled with the intended emotion. However, to ensure the quality and accuracy of these labels, we conducted a manual review process.
 
-Since it's infeasible to annotate all 10,000 samples with just one annotator, and to eliminate potential biases, we decided on using a annotation plataform called Doccano \cite{doccano} hosted on a DigitalOcean \ac{VM} \cite{digitalocean}. This platform allows multiple annotators to work on the same dataset, providing a collaborative environment for annotation.
+Since it's infeasible to annotate all 10,000 samples with just one annotator, and to eliminate potential biases, we decided on using the annotation platform Doccano \cite{doccano} hosted on a DigitalOcean \ac{VM} \cite{digitalocean}. This platform allows multiple annotators to work on the same dataset, providing a collaborative environment for annotation.
