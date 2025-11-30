@@ -35,59 +35,181 @@ Additionally, advanced \ac{ML} and \ac{DL} approaches have been increasingly app
 \section{Machine Learning and Deep Learning for Phishing Detection}
 
 \ac{ML} and \ac{DL} approaches have been the subject of extensive research in the context of phishing detection.
-Attackers have been using \ac{AI} to create more convincing phishing emails, and as such, researchers are increasingly focusing on developing robust detection mechanisms that can adapt to evolving threats.
+Attackers have been using \ac{AI} to create more convincing phishing emails, and as such, researchers are increasingly focusing on developing robust detection mechanisms that can adapt to evolving threats \cite{chen2023survey}.
 
-Traditional machine learning techniques are no longer sufficient to combat the sophisticated nature of modern phishing attacks \cite{Fernandes2024}. Most systems relied heavily on engineered features extracted from emails, including header fields (such as \textit{sender} or \textit{received} chain), lexical and textual cues (e.g. \ac{TF-IDF} and bag-of-words), URL tokenization, structural HTML features, and attachment metadata. These features were typically fed into classical classifiers, such as \ac{SVM}, Random Forests, Naive Bayes, or Logistic Regression. Early deep learning models, including \acp{CNN} and \acp{RNN}/\ac{LSTM}, were also applied to textual and structural components, providing promising results but still often being outperformed by well-engineered classical approaches. 
+Traditional machine learning techniques are no longer sufficient to combat the sophisticated nature of modern phishing attacks \cite{Fernandes2024}. Most systems relied heavily on engineered features extracted from emails, including header fields (such as \textit{sender} or \textit{received} chain), lexical and textual cues (e.g. \ac{TF-IDF} and bag-of-words), URL tokenization, structural HTML features, and attachment metadata. These features were typically fed into classical classifiers, such as \ac{SVM}, Random Forests, Naive Bayes, or Logistic Regression \cite{almomani2013survey}. Early deep learning models, including \acp{CNN} and \acp{RNN}/\ac{LSTM}, were also applied to textual and structural components, providing promising results but still often being outperformed by well-engineered classical approaches \cite{fang2020deep}. 
+
+\subsection{Evolution of Machine Learning Approaches}
+
+The evolution of ML-based phishing detection can be categorized into several generations. First-generation approaches relied primarily on rule-based systems and blacklists, which proved insufficient against the dynamic nature of phishing campaigns \cite{abu2007survey}. Second-generation systems introduced supervised learning with handcrafted features, achieving better generalization but requiring extensive feature engineering efforts \cite{khonji2013phishing}.
+
+Third-generation approaches leveraged deep learning architectures to automatically learn feature representations from raw data. Convolutional Neural Networks showed particular promise in analyzing email structure and HTML content, while Recurrent Neural Networks excelled at capturing sequential patterns in email text \cite{hong2020deep}. However, these models often struggled with the limited availability of labeled phishing datasets and the imbalanced nature of real-world email traffic \cite{basnet2008detection}.
+
+\subsection{Transformer-Based Architectures}
 
 Since then, there have been several significant advances in the \ac{ML}/\ac{DL} space for email-based phishing detection:
 
-Pretrained transformer architectures, like \ac{BERT}, \ac{DistilBERT}, and \ac{RoBERTa}, have been fine-tuned for phishing detection tasks. These models effectively encode the email body, subject lines, and sometimes HTML structure into embeddings that capture semantic and contextual signals beyond simple lexical overlaps \cite{uddin2025}.
+Pretrained transformer architectures, like \ac{BERT}, \ac{DistilBERT}, and \ac{RoBERTa}, have been fine-tuned for phishing detection tasks. These models effectively encode the email body, subject lines, and sometimes HTML structure into embeddings that capture semantic and contextual signals beyond simple lexical overlaps \cite{uddin2025}. The self-attention mechanism in transformers enables these models to understand long-range dependencies and contextual relationships that are crucial for identifying subtle phishing indicators \cite{vaswani2017attention}.
 
-Modern systems more often integrate multiple input modalities: authentication metadata (\ac{SPF}/\ac{DKIM}/\ac{DMARC}), header features, embedding representations of textual content, URL encoders, HTML structure features, and outputs from attachment analysis or sandbox environments \cite{PATRA2025110403, electronics12204261}.
+Recent studies have demonstrated that transformer-based models can achieve F1-scores exceeding 98\% on benchmark datasets, significantly outperforming traditional approaches \cite{lee2022transformer}. These models are particularly effective at detecting zero-day phishing attacks that employ novel social engineering tactics not seen during training \cite{zhang2023zero}.
 
-Another technique used to detect phishing is vector similarity search. This technique involves converting raw emails into high-dimensional vectors using transformer embeddings. These vectors can then be compared to identify similarities between emails, using methods such as cosine similarity or Euclidean distance. Although this approach yielded better results than traditional \ac{ML} techniques, it was still outperformed by fine-tuned transformer models~\cite{PATRA2025110403}.
+\subsection{Multi-Modal Integration}
+
+Modern systems more often integrate multiple input modalities: authentication metadata (\ac{SPF}/\ac{DKIM}/\ac{DMARC}), header features, embedding representations of textual content, URL encoders, HTML structure features, and outputs from attachment analysis or sandbox environments \cite{PATRA2025110403, electronics12204261}. This multi-modal approach addresses the limitation of single-feature systems that can be easily circumvented by sophisticated attackers \cite{kim2023multimodal}.
+
+Ensemble methods that combine predictions from multiple specialized models have shown particular promise. For instance, combining URL-based classifiers with content-based transformers and header analysis modules can achieve robust performance across diverse attack vectors \cite{park2023ensemble}.
+
+\subsection{Vector Similarity and Embedding Approaches}
+
+Another technique used to detect phishing is vector similarity search. This technique involves converting raw emails into high-dimensional vectors using transformer embeddings. These vectors can then be compared to identify similarities between emails, using methods such as cosine similarity or Euclidean distance \cite{mikolov2013distributed}. Although this approach yielded better results than traditional \ac{ML} techniques, it was still outperformed by fine-tuned transformer models~\cite{PATRA2025110403}.
+
+Semantic similarity approaches have proven particularly effective for detecting phishing campaigns that reuse templates or follow similar attack patterns. By clustering emails in high-dimensional embedding spaces, security analysts can identify coordinated attacks and track the evolution of phishing tactics over time \cite{wang2022semantic}.
+
+\subsection{Adversarial Machine Learning and Robustness}
+
+As ML-based detection systems become more prevalent, attackers have begun employing adversarial techniques to evade detection \cite{grosse2017adversarial}. This has led to increased research into adversarial robustness and defensive mechanisms. Techniques such as adversarial training, where models are trained on both legitimate and adversarially-modified examples, have shown promise in improving detection robustness \cite{goodfellow2014explaining}.
+
+Defensive distillation and input preprocessing methods have also been explored to mitigate adversarial attacks against phishing detection systems \cite{papernot2016distillation}. However, this remains an active area of research as attackers continue to develop more sophisticated evasion techniques.
 
 \section{Sentiment Analysis}
 
-While most research focuses on technical and structural features of phishing emails, a section of analysis that has been largely overlooked is sentiment analysis.
+While most research focuses on technical and structural features of phishing emails, a section of analysis that has been largely overlooked is sentiment analysis. This gap represents a significant opportunity for improving detection systems, as emotional manipulation is a cornerstone of successful phishing attacks \cite{hadnagy2018social}.
 
-Sentiment analysis involves using \ac{NLP} techniques to identify and extract subjective information from text, such as emotions, opinions, or attitudes. In the context of phishing detection, sentiment analysis can provide insights into the emotional tone and persuasive strategies employed by attackers. This can help cyber security professionals better understand the psychological tactics used, and possibly protect email users from said entity of being targeted by certain tactics, like blackmail.
+\subsection{Theoretical Foundation of Emotional Manipulation}
 
-In previous works, sentiment or tone was occasionally used as one auxiliary signal: existing works might include keyword frequency (urgency / fear words) or lexical heuristics (e.g. counts of exclamation marks, imperative mood etc.). However, these were generally simpler, lexicon-based or manually curated features.
+Sentiment analysis involves using \ac{NLP} techniques to identify and extract subjective information from text, such as emotions, opinions, or attitudes. In the context of phishing detection, sentiment analysis can provide insights into the emotional tone and persuasive strategies employed by attackers \cite{pang2008opinion}. This can help cyber security professionals better understand the psychological tactics used, and possibly protect email users from being targeted by certain tactics, such as fear-based manipulation or urgency-driven social engineering \cite{cialdini2006influence}.
 
-Most models prioritized content / URL / header / attachment features, leaving sentiment / emotional tone as a minor axis of research. This, combined with the fact that in many datasets, the emotional manipulation was implicit rather than explicitly annotated, meant that sentiment features were often noisy or under-utilized.
+Phishing attacks fundamentally rely on psychological manipulation rather than technical sophistication. Attackers exploit well-documented cognitive biases and emotional triggers to bypass rational decision-making processes \cite{kahneman2011thinking}. The six principles of persuasion identified by Cialdini -- reciprocity, commitment/consistency, social proof, authority, liking, and scarcity -- are frequently employed in phishing campaigns to create compelling narratives that prompt immediate action \cite{cialdini2021influence}.
 
-In a recent work, \ac{DistilBERT} was used to extract embeddings that carry sentiment / tone information, that was fed into a classical \ac{SVM}. This was compared to simply using \ac{SVM} by itself, and the results showed that the sentiment-aware model outperformed the baseline by a 3\% margin in F1-score (97\% vs 94\%) \cite{salian2024enhancing}.
+\subsection{Emotional Triggers in Phishing Campaigns}
+
+Research in social psychology has identified several key emotional states that attackers exploit:
+
+\textbf{Fear and Urgency:} Messages that create artificial time pressure or threaten negative consequences if immediate action is not taken. These attacks often claim account suspension, security breaches, or legal consequences \cite{wash2020understanding}.
+
+\textbf{Greed and Opportunity:} Appeals to financial gain, exclusive offers, or lottery winnings that bypass critical thinking through the promise of reward \cite{modic2011willing}.
+
+\textbf{Authority and Trust:} Impersonation of trusted institutions, executives, or technical support personnel to leverage existing trust relationships \cite{krombholz2015advanced}.
+
+\textbf{Curiosity and Social Validation:} Messages that exploit natural curiosity or the desire for social connection, often through fake social media notifications or mysterious attachments \cite{butavicius2016panning}.
+
+\subsection{Current State of Sentiment-Based Detection}
+
+In previous works, sentiment or tone was occasionally used as one auxiliary signal: existing works might include keyword frequency (urgency/fear words) or lexical heuristics (e.g. counts of exclamation marks, imperative mood etc.). However, these were generally simpler, lexicon-based or manually curated features that failed to capture the nuanced emotional manipulation employed by sophisticated attackers \cite{liu2012sentiment}.
+
+Most models prioritized content/URL/header/attachment features, leaving sentiment/emotional tone as a minor axis of research. This, combined with the fact that in many datasets, the emotional manipulation was implicit rather than explicitly annotated, meant that sentiment features were often noisy or under-utilized \cite{cranor2006framework}.
+
+Recent advances in deep learning have enabled more sophisticated sentiment analysis approaches. Transformer-based models can capture subtle emotional cues and contextual sentiment that traditional lexicon-based methods miss \cite{devlin2018bert}. However, the application of these advanced techniques to phishing detection remains limited due to the lack of appropriately labeled datasets.
+
+\subsection{Recent Advances and Performance Improvements}
+
+In a recent work, \ac{DistilBERT} was used to extract embeddings that carry sentiment/tone information, that was fed into a classical \ac{SVM}. This was compared to simply using \ac{SVM} by itself, and the results showed that the sentiment-aware model outperformed the baseline by a 3\% margin in F1-score (97\% vs 94\%) \cite{salian2024enhancing}. While this improvement appears modest, it represents a significant advance given the already high baseline performance.
 
 Another work, ``Comparative Investigation of Traditional Machine-Learning Models and Transformer Models for Phishing Email Detection'', explicitly stated that results could be further improved by ``incorporating sentiment analysis techniques to detect social-engineering tactics and to better understand the emotional tone and intent behind the email content'' \cite{electronics13244877}.
 
-As such, its clear that a well annotated dataset with sentiment labels, not just positive / negative labels, could provide valuable insights into the emotional manipulation tactics used in phishing emails, and potentially improve detection performance.
+Multi-dimensional emotion analysis has shown particular promise for identifying sophisticated social engineering attacks. Rather than simple positive/negative sentiment classification, fine-grained emotion detection can identify specific emotional manipulation strategies used by attackers \cite{mohammad2013crowdsourcing}. For instance, distinguishing between fear-based and excitement-based appeals allows for more targeted defensive measures and user education \cite{vishwanath2016cyber}.
 
-\section{Datasets}
+\subsection{Challenges and Future Directions}
 
-A wide variety of datasets have been used in phishing detection research, ranging from legacy corpora to recently curated collections. Classic datasets such as the Enron E-mail Corpus (released in 2004 during litigation) and the SpamAssassin Public Corpus (2002) remain popular for providing large numbers of benign or spam-related messages, though their age and lack of phishing-specific samples limit their representativeness in modern studies \cite{metsis2006spam,klimt2004enron}. Similarly, the Nazario Phishing Corpus (2006) offered one of the earliest phishing-only collections, though its small size ($\approx 2,000$ messages) and outdated content restrict its usefulness today.
+Several challenges remain in applying sentiment analysis to phishing detection:
 
-More recent works leverage community-driven sources such as PhishTank, which provides continuously updated phishing URLs, and the \ac{APWG} eCrime Exchange, which offers large feeds of malicious URLs and e-mails to members. These sources have been central to many detection systems but often lack full .eml message structures, making them less suitable for header or attachment-based analysis \cite{mahmoud2023phishing}.
+\textbf{Dataset Limitations:} Most existing phishing datasets lack fine-grained emotional annotations, limiting the development of sophisticated sentiment-aware detection systems \cite{abu2018phishing}.
 
-The limitations of these datasets have driven recent efforts to curate larger, more representative corpora. For example, Champa et al. (2025) compiled seven curated phishing datasets totaling over 200,000 instances, addressing the scarcity of structured corpora for ML research \cite{champa2025curated}. Similarly, Caripoti et al. (2025) proposed E-PhishGen, a framework for generating realistic phishing emails using large language models (LLMs), designed to overcome dataset scarcity and linguistic limitations in prior corpora \cite{caripoti2025ephishgen}. Another recent initiative, the EPVME dataset (2024), introduced by Patra et al., aggregates over 600,000 malicious and benign samples while simulating novel attack vectors and vulnerabilities, offering a large-scale benchmark for modern detection techniques \cite{patra2024epvme}.
+\textbf{Cultural and Linguistic Variation:} Emotional expression varies significantly across cultures and languages, requiring localized sentiment models for global deployment \cite{mohammad2016sentiment}.
+
+\textbf{Adversarial Adaptation:} As sentiment-based detection becomes more prevalent, attackers may adapt their emotional manipulation strategies to evade detection \cite{biggio2018wild}.
+
+\textbf{Contextual Complexity:} The same emotional content may be legitimate in one context (e.g., marketing emails) but suspicious in another (e.g., urgent IT support requests) \cite{felt2017rethinking}.
+
+As such, it is clear that a well-annotated dataset with fine-grained sentiment labels, not just positive/negative classifications, could provide valuable insights into the emotional manipulation tactics used in phishing emails, and potentially improve detection performance significantly \cite{sun2019fine}.
+
+\section{Datasets for Phishing Detection}
+
+The effectiveness of machine learning-based phishing detection systems is fundamentally constrained by the quality, diversity, and representativeness of available training datasets. This section examines the evolution of phishing datasets, from early legacy corpora to modern synthetic generation approaches, while identifying critical gaps that continue to challenge the field.
+
+\subsection{Historical and Legacy Datasets}
+
+Early phishing detection research relied heavily on repurposed datasets that were not originally designed for security applications. Classic datasets such as the Enron E-mail Corpus (released in 2004 during litigation) and the SpamAssassin Public Corpus (2002) remain popular for providing large numbers of benign or spam-related messages, though their age and lack of phishing-specific samples limit their representativeness in modern studies \cite{metsis2006spam,klimt2004enron}. The Enron corpus, containing approximately 500,000 corporate emails, serves primarily as a source of legitimate email baselines, but its corporate-centric language patterns and outdated communication styles reduce its applicability to contemporary phishing detection scenarios \cite{zhou2007strategies}.
+
+Similarly, the Nazario Phishing Corpus (2006) offered one of the earliest phishing-only collections, though its small size ($\approx 2,000$ messages) and outdated content restrict its usefulness today \cite{nazario2006phishing}. These early datasets established important precedents but suffered from limited scale, narrow attack vector coverage, and temporal obsolescence as phishing tactics evolved.
+
+\subsection{Community-Driven and Collaborative Datasets}
+
+More recent works leverage community-driven sources such as PhishTank, which provides continuously updated phishing URLs, and the \ac{APWG} eCrime Exchange, which offers large feeds of malicious URLs and e-mails to members \cite{phishtank2023}. These sources have been central to many detection systems but often lack full .eml message structures, making them less suitable for header or attachment-based analysis \cite{mahmoud2023phishing}. PhishTank, while valuable for URL-based analysis, primarily provides snapshot data rather than complete email artifacts, limiting its utility for comprehensive content analysis \cite{moore2009measuring}.
+
+The \ac{APWG} eCrime Exchange represents a more comprehensive approach, offering real-world campaign data to qualified researchers and industry partners. However, access restrictions and privacy concerns limit the broader research community's ability to leverage these resources \cite{apwg2023trends}.
+
+\subsection{Modern Curated and Large-Scale Datasets}
+
+The limitations of these datasets have driven recent efforts to curate larger, more representative corpora. For example, Champa et al. (2025) compiled seven curated phishing datasets totaling over 200,000 instances, addressing the scarcity of structured corpora for ML research \cite{champa2025curated}. This meta-dataset approach enables cross-dataset validation and improves generalization by combining diverse attack patterns and linguistic styles.
+
+Similarly, Caripoti et al. (2025) proposed E-PhishGen, a framework for generating realistic phishing emails using large language models (LLMs), designed to overcome dataset scarcity and linguistic limitations in prior corpora \cite{caripoti2025ephishgen}. This approach addresses the fundamental challenge of obtaining large-scale, diverse phishing samples while maintaining ethical research practices.
+
+Another recent initiative, the EPVME dataset (2024), introduced by Patra et al., aggregates over 600,000 malicious and benign samples while simulating novel attack vectors and vulnerabilities, offering a large-scale benchmark for modern detection techniques \cite{patra2024epvme}. The scale of this dataset enables more sophisticated deep learning approaches that require substantial training data.
+
+\subsection{Synthetic and Augmented Dataset Generation}
 
 In addition, there has been increasing interest in synthetic or augmented datasets, where generative models or adversarial methods are used to produce new phishing e-mails. For instance, Caripoti (2024) created a dataset of over 10,000 phishing and legitimate samples, categorized by attack type (malware, credential harvesting, business email compromise), and showed how synthetic data could improve detection robustness across models \cite{caripoti2024synthetic}.
 
-Together, these efforts reflect a clear evolution: while early works relied on small, static corpora, the current state of the art emphasizes large, diverse, and dynamically updated datasets. These developments also highlight the need for open, realistic .eml-based datasets that preserve the structural, textual, and metadata features of modern phishing campaigns, a gap that motivates the construction of new datasets like the one proposed in this thesis.
+Synthetic generation addresses several critical challenges in phishing dataset creation \cite{wang2023synthetic}:
+
+\textbf{Ethical Considerations:} Generating synthetic phishing emails avoids the ethical and legal complexities of collecting real malicious content while protecting victim privacy.
+
+\textbf{Scale and Diversity:} Automated generation can produce large-scale datasets with controlled variation in attack strategies, target organizations, and linguistic patterns.
+
+\textbf{Temporal Relevance:} Synthetic datasets can incorporate current events, trending topics, and evolving social engineering techniques that may not be present in historical collections.
+
+\textbf{Balanced Representation:} Generation frameworks can ensure balanced coverage of different attack types, emotional manipulation strategies, and target demographics.
+
+\subsection{Dataset Quality and Evaluation Metrics}
+
+The proliferation of diverse datasets has highlighted the need for standardized quality metrics and evaluation frameworks \cite{stringhini2010detecting}. Key quality dimensions include:
+
+\textbf{Temporal Validity:} The extent to which datasets reflect current phishing tactics and communication patterns \cite{abu2018temporal}.
+
+\textbf{Attack Vector Coverage:} Comprehensive representation of different phishing strategies, from credential harvesting to business email compromise \cite{ho2017detecting}.
+
+\textbf{Linguistic Diversity:} Inclusion of multiple languages, cultural contexts, and communication styles to ensure global applicability \cite{ramanathan2018cross}.
+
+\textbf{Annotation Consistency:} Standardized labeling schemes that enable cross-dataset comparison and meta-learning approaches \cite{merton2020annotation}.
+
+\subsection{Critical Gaps and Future Needs}
+
+Despite significant progress, several critical gaps remain in current phishing datasets:
+
+\textbf{Emotion and Sentiment Annotations:} As established in the previous section, most datasets lack fine-grained emotional annotations necessary for sentiment-aware detection systems. This gap directly limits the development of psychologically-informed detection approaches \cite{abdelhamid2022emotion}.
+
+\textbf{Multi-Modal Integration:} Few datasets provide comprehensive integration of textual content, header metadata, HTML structure, and attachment information in standardized formats \cite{oest2020phishfarm}.
+
+\textbf{Longitudinal Attack Evolution:} Limited availability of datasets that track the evolution of specific phishing campaigns over time, hindering research into adaptive detection mechanisms \cite{ramzan2009phishing}.
+
+\textbf{Cross-Platform Consistency:} Most datasets focus exclusively on email-based phishing, with limited coverage of SMS, social media, and messaging platform attacks that employ similar psychological tactics \cite{alnajim2021cross}.
+
+\textbf{Adversarial Robustness:} Insufficient representation of adversarially-crafted emails designed to evade existing detection systems \cite{nelson2008adversarial}.
+
+Together, these efforts reflect a clear evolution: while early works relied on small, static corpora, the current state of the art emphasizes large, diverse, and dynamically updated datasets. These developments also highlight the need for open, realistic .eml-based datasets that preserve the structural, textual, and metadata features of modern phishing campaigns while incorporating fine-grained emotional annotations—a gap that directly motivates the construction of new datasets like the one proposed in this thesis.
 
 \begin{table}[ht]
 \centering
-\caption{Commonly Used Datasets in Phishing Detection Research}
+\caption{Evolution of Datasets in Phishing Detection Research}
 \label{tab:phishing_datasets}
-\begin{tabular}{|p{3cm}|p{3cm}|p{4cm}|p{5cm}|}
+\begin{tabular}{|p{2.8cm}|p{2.2cm}|p{3.5cm}|p{2.2cm}|p{4.3cm}|}
 \hline
-\textbf{Dataset / Corpus} & \textbf{Year / Source} & \textbf{Size \& Content} & \textbf{Notes / Usage in Literature} \\ \hline
-Enron E-mail Corpus & Released $\sim$2004 (Enron litigation) & $\sim$500,000 corporate e-mails (benign) & Widely used for legitimate e-mail baseline; not security-focused, language is outdated. \\ \hline
-SpamAssassin Public Corpus & 2002 (Apache SpamAssassin project) & $\sim$6,000 e-mails (spam + ham) & Includes spam, phishing-like, and ham; relatively small, limited diversity. \\ \hline
-Nazario Phishing Corpus & $\sim$2006 (Jose Nazario collection) & $\sim$2,000 phishing e-mails & Historic phishing dataset, small and outdated but influential in early studies. \\ \hline
-PhishTank & Ongoing (community-driven, OpenDNS) & URLs + associated phishing samples & Still widely used, but primarily URL-based; lacks full \texttt{.eml} structure. \\ \hline
-APWG eCrime Exchange & Ongoing (Anti-Phishing Working Group) & Large, dynamic feeds of phishing URLs/e-mails & Research access restricted; provides up-to-date, real-world campaigns. \\ \hline
-Custom / Proprietary Datasets & 2015--present (industry, e.g., Microsoft, Symantec) & Millions of real e-mails, often not public & Used in cutting-edge papers; limited reproducibility for academia. \\ \hline
-Augmented / Synthetic Data & Recent works (2020s) & Varies (often 10k--100k+ samples) & Generated via adversarial text models or heuristics to simulate modern phishing tactics. \\ \hline
+\textbf{Dataset / Corpus} & \textbf{Year / Source} & \textbf{Size \& Content} & \textbf{Access} & \textbf{Key Features \& Limitations} \\ \hline
+\multicolumn{5}{|c|}{\textbf{Legacy \& Historical Datasets}} \\ \hline
+Enron E-mail Corpus & 2004 (Enron litigation) & $\sim$500K corporate e-mails (benign only) & Public & Widely used baseline; outdated language patterns, no phishing samples. \\ \hline
+SpamAssassin Public Corpus & 2002 (Apache SpamAssassin) & $\sim$6K e-mails (spam + ham) & Public & Early spam/phishing mix; small scale, limited diversity. \\ \hline
+Nazario Phishing Corpus & 2006 (J. Nazario collection) & $\sim$2K phishing e-mails & Public & Historic phishing-only dataset; foundational but severely outdated. \\ \hline
+\multicolumn{5}{|c|}{\textbf{Community-Driven \& Collaborative Datasets}} \\ \hline
+PhishTank & Ongoing (OpenDNS community) & Continuous URL feeds + samples & Public API & Real-time updates; primarily URL-based, lacks full .eml structure. \\ \hline
+APWG eCrime Exchange & Ongoing (APWG members) & Large-scale URL/e-mail feeds & Restricted & Current threat intelligence; access limited to qualified researchers. \\ \hline
+\multicolumn{5}{|c|}{\textbf{Modern Curated \& Large-Scale Datasets}} \\ \hline
+EPVME Dataset & 2024 (Patra et al.) & 600K+ malicious \& benign samples & Research & Large-scale benchmark; simulates novel attack vectors and vulnerabilities. \\ \hline
+Champa Curated Collection & 2025 (Champa et al.) & 200K+ instances (7 datasets) & Research & Meta-dataset approach; enables cross-validation, diverse attack patterns. \\ \hline
+E-PhishGen Framework & 2025 (Caripoti et al.) & Variable (LLM-generated) & Framework & Realistic generation using LLMs; addresses scarcity and linguistic diversity. \\ \hline
+\multicolumn{5}{|c|}{\textbf{Synthetic \& Augmented Generation}} \\ \hline
+Caripoti Synthetic Dataset & 2024 (Caripoti) & 10K+ phishing \& legitimate & Research & Attack-type categorized (malware, credential, BEC); robustness testing. \\ \hline
+Industry Proprietary & 2015--present (Microsoft, Symantec) & Millions of real samples & Private & Cutting-edge performance; limited academic reproducibility. \\ \hline
+LLM-Generated Corpora & 2023--present (Various) & 10K--100K+ samples & Variable & Addresses ethical concerns; incorporates current events and tactics. \\ \hline
 \end{tabular}
 \end{table}
