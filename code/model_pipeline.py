@@ -1,55 +1,59 @@
 #!/usr/bin/env python3
 """
-Machine Learning Pipeline for Combined Dataset
-Splits data, trains models, and evaluates performance
+Supervised Machine Learning Pipeline for Email Classification
+Trains models for phishing detection and emotion classification
 """
 
 import pandas as pd
 import numpy as np
 import os
 import re
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.svm import SVC
 from sklearn.metrics import (
     classification_report, 
     confusion_matrix, 
-    accuracy_score, 
-    precision_recall_fscore_support,
-    roc_auc_score,
-    roc_curve
+    accuracy_score,
+    f1_score,
+    precision_recall_fscore_support
 )
 import matplotlib.pyplot as plt
 import seaborn as sns
-from collections import Counter
 import warnings
 warnings.filterwarnings('ignore')
 
-class MLPipeline:
+class SupervisedMLPipeline:
     def __init__(self, data_path):
-        """Initialize the ML pipeline with data path"""
+        """Initialize the supervised ML pipeline"""
         self.data_path = data_path
         self.data = None
         self.X = None
-        self.y = None
+        self.y_phishing = None
+        self.y_emotion = None
+        
+        # Split data
         self.X_train = None
         self.X_test = None
-        self.y_train = None
-        self.y_test = None
-        self.vectorizer = None
-        self.models = {}
-        self.results = {}
+        self.y_phishing_train = None
+        self.y_phishing_test = None
+        self.y_emotion_train = None
+        self.y_emotion_test = None
+        
+        # Models
+        self.phishing_models = {}
+        self.emotion_models = {}
+        self.phishing_results = {}
+        self.emotion_results = {}
         
     def load_data(self):
         """Load the combined dataset"""
         print("Loading dataset...")
         try:
-            # Try different possible file formats/names
             possible_files = [
                 self.data_path,
                 'code/combined_dataset.csv',
@@ -70,10 +74,6 @@ class MLPipeline:
             print(f"Dataset shape: {self.data.shape}")
             print(f"Columns: {list(self.data.columns)}")
             
-            # Show data info
-            print("\nDataset info:")
-            print(self.data.info())
-            
             return True
             
         except Exception as e:
@@ -85,500 +85,389 @@ class MLPipeline:
         if pd.isna(text) or text == '':
             return ''
         
-        # Convert to string if not already
         text = str(text)
-        
-        # Replace multiple whitespaces (including \n, \r, \t) with single space
         text = re.sub(r'\s+', ' ', text)
-        
-        # Remove leading/trailing whitespace
         text = text.strip()
-        
-        # Normalize common formatting patterns
-        # Remove extra punctuation spacing
         text = re.sub(r'\s*([,.!?;:])\s*', r'\1 ', text)
-        
-        # Normalize quotation marks
         text = re.sub(r'[""''`]', '"', text)
-        
-        # Remove excessive punctuation (more than 2 consecutive)
         text = re.sub(r'([!?.]){3,}', r'\1\1', text)
         
         return text
     
     def prepare_data(self):
-        """Prepare features and store labels for validation only"""
+        """Prepare features and labels"""
         print("\nPreparing data...")
         
         if 'text' not in self.data.columns:
             raise ValueError("No 'text' column found in dataset")
-            
-        # Extract and normalize text features
-        print("Normalizing text to remove formatting differences...")
+        
+        # Normalize text
+        print("Normalizing text...")
         self.X = self.data['text'].apply(self.normalize_text)
-        print(f"Features shape: {self.X.shape}")
-        print("✓ Text normalization completed")
         
-        # Store labels for validation (but don't use them for training)
-        self.emotion_labels = None
-        self.phishing_labels = None
-        self.phishing_emotion_labels = None
+        # Extract labels
+        if 'label' not in self.data.columns:
+            raise ValueError("No 'label' column found for phishing detection")
+        if 'emotion' not in self.data.columns:
+            raise ValueError("No 'emotion' column found for emotion classification")
         
-        if 'emotion' in self.data.columns and 'label' in self.data.columns:
-            self.emotion_labels = self.data['emotion']
-            self.phishing_labels = self.data['label']
-            
-            # Filter emotions only for phishing emails
-            phishing_mask = self.phishing_labels == 'phishing'
-            self.phishing_emotion_labels = self.emotion_labels[phishing_mask]
-            
-            emotion_counts = self.emotion_labels.value_counts().to_dict()
-            phishing_emotion_counts = self.phishing_emotion_labels.value_counts().to_dict()
-            
-            print(f"Found emotion labels (all emails): {emotion_counts}")
-            print(f"Found emotion labels (phishing only): {phishing_emotion_counts}")
-            print(f"Total unique emotions in phishing emails: {len(phishing_emotion_counts)}")
-            print(f"Phishing emails for emotion analysis: {len(self.phishing_emotion_labels)}")
-            
-            if len(phishing_emotion_counts) > 0:
-                print(f"Most common phishing emotion: {max(phishing_emotion_counts, key=phishing_emotion_counts.get)} ({max(phishing_emotion_counts.values())} samples)")
-                print(f"Least common phishing emotion: {min(phishing_emotion_counts, key=phishing_emotion_counts.get)} ({min(phishing_emotion_counts.values())} samples)")
-            
-        # Use 'label' column for phishing labels
-        if 'label' in self.data.columns:
-            self.phishing_labels = self.data['label']
-            print(f"Found phishing labels: {self.phishing_labels.value_counts().to_dict()}")
-                
-        if self.emotion_labels is None and self.phishing_labels is None:
-            print("Warning: No emotion or phishing labels found for validation")
-            return False
-            
-        print("\nNote: Labels will be used only for validation, not for training")
+        self.y_phishing = self.data['label']
+        self.y_emotion = self.data['emotion']
+        
+        # Show label distributions
+        print(f"\nPhishing label distribution:")
+        print(self.y_phishing.value_counts())
+        
+        print(f"\nEmotion label distribution:")
+        print(self.y_emotion.value_counts())
+        
+        print(f"\nTotal samples: {len(self.X)}")
+        
         return True
     
     def split_data(self, test_size=0.2, random_state=42):
-        """Split data into train and test sets (80/20 split)"""
-        print(f"\nSplitting data into {int((1-test_size)*100)}/{int(test_size*100)} train/test split...")
+        """Split data into train and test sets"""
+        print(f"\nSplitting data (80/20 train/test)...")
         
-        # Split text data
-        indices = np.arange(len(self.X))
-        train_idx, test_idx = train_test_split(
-            indices, 
-            test_size=test_size, 
-            random_state=random_state
+        # Split for phishing detection
+        self.X_train, self.X_test, self.y_phishing_train, self.y_phishing_test = train_test_split(
+            self.X, self.y_phishing, test_size=test_size, random_state=random_state, stratify=self.y_phishing
         )
         
-        self.X_train = self.X.iloc[train_idx]
-        self.X_test = self.X.iloc[test_idx]
+        # For emotion classification, we'll use the same split
+        # but we need to align the indices
+        train_idx = self.X_train.index
+        test_idx = self.X_test.index
         
-        # Split labels for validation (but don't use for training)
-        if self.emotion_labels is not None:
-            self.emotion_train = self.emotion_labels.iloc[train_idx]
-            self.emotion_test = self.emotion_labels.iloc[test_idx]
-            
-        if self.phishing_labels is not None:
-            self.phishing_train = self.phishing_labels.iloc[train_idx]
-            self.phishing_test = self.phishing_labels.iloc[test_idx]
-            
-        # Split phishing-only emotion labels
-        if self.phishing_emotion_labels is not None:
-            # Create mapping from original indices to phishing-filtered indices
-            phishing_indices = self.data[self.data['label'] == 'phishing'].index
-            phishing_train_mask = np.isin(phishing_indices, train_idx)
-            phishing_test_mask = np.isin(phishing_indices, test_idx)
-            
-            self.phishing_emotion_train = self.phishing_emotion_labels[phishing_train_mask]
-            self.phishing_emotion_test = self.phishing_emotion_labels[phishing_test_mask]
-            
-            print(f"Phishing emotion training samples: {len(self.phishing_emotion_train)}")
-            print(f"Phishing emotion test samples: {len(self.phishing_emotion_test)}")
+        self.y_emotion_train = self.y_emotion.loc[train_idx]
+        self.y_emotion_test = self.y_emotion.loc[test_idx]
         
         print(f"Training set size: {len(self.X_train)}")
         print(f"Test set size: {len(self.X_test)}")
         
-        return True
-    
-    def vectorize_text(self, max_features=10000):
-        """Convert text to TF-IDF features"""
-        print(f"\nVectorizing normalized text with TF-IDF (max_features={max_features})...")
-        print("Text preprocessing: whitespace normalization, lowercase, alphabetic tokens only")
+        print(f"\nPhishing training distribution:")
+        print(self.y_phishing_train.value_counts())
         
-        self.vectorizer = TfidfVectorizer(
-            max_features=max_features,
-            stop_words='english',
-            ngram_range=(1, 2),  # Use unigrams and bigrams
-            min_df=2,  # Ignore terms that appear in less than 2 documents
-            max_df=0.95,  # Ignore terms that appear in more than 95% of documents
-            lowercase=True,  # Convert to lowercase
-            token_pattern=r'\b[A-Za-z]{2,}\b',  # Only alphabetic tokens, min 2 chars
-            strip_accents='ascii'  # Remove accents
-        )
-        
-        # Fit on training data and transform both train and test
-        self.X_train_vectorized = self.vectorizer.fit_transform(self.X_train)
-        self.X_test_vectorized = self.vectorizer.transform(self.X_test)
-        
-        print(f"Training features shape: {self.X_train_vectorized.shape}")
-        print(f"Test features shape: {self.X_test_vectorized.shape}")
-        
-        # Add semantic embeddings using SVD for dimensionality reduction
-        print("\nCreating semantic embeddings with SVD...")
-        self.svd = TruncatedSVD(n_components=100, random_state=42)
-        self.X_train_semantic = self.svd.fit_transform(self.X_train_vectorized)
-        self.X_test_semantic = self.svd.transform(self.X_test_vectorized)
-        
-        print(f"Semantic embeddings shape: {self.X_train_semantic.shape}")
-        print(f"Explained variance ratio: {self.svd.explained_variance_ratio_.sum():.4f}")
+        print(f"\nEmotion training distribution:")
+        print(self.y_emotion_train.value_counts())
         
         return True
     
-    def train_models(self):
-        """Train unsupervised/clustering models and supervised models for comparison"""
-        print("\nTraining multiple clustering models...")
-        print("Using optimized cluster counts and semantic embeddings (unsupervised approach)")
+    def train_phishing_models(self):
+        """Train models for phishing detection"""
+        print("\n" + "="*70)
+        print("TRAINING PHISHING DETECTION MODELS")
+        print("="*70)
         
-        from sklearn.cluster import KMeans
-        from sklearn.mixture import GaussianMixture
-        
-        # Unsupervised models with optimized cluster counts
-        from sklearn.cluster import DBSCAN, AgglomerativeClustering
-        
-        # Try different cluster counts for different tasks
-        phishing_clusters = 2  # Binary: phishing vs non-phishing
-        
-        # Check actual number of unique emotions in phishing emails for better clustering
-        if self.phishing_emotion_labels is not None:
-            unique_emotions = len(self.phishing_emotion_labels.unique())
-            print(f"Found {unique_emotions} unique emotions in phishing emails")
-            emotion_clusters = min(unique_emotions, 8)  # Cap at 8 to avoid over-clustering
-            print(f"Using {emotion_clusters} clusters for emotion detection (phishing emails only)")
-        else:
-            emotion_clusters = 4   # Default fallback
-        
-        self.models = {
-            # Phishing detection (2 clusters)
-            'KMeans-2': KMeans(n_clusters=phishing_clusters, random_state=42, n_init=10),
-            'Gaussian-2': GaussianMixture(n_components=phishing_clusters, random_state=42),
+        # Define models with pipelines
+        self.phishing_models = {
+            'Logistic Regression': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', LogisticRegression(max_iter=1000, random_state=42))
+            ]),
             
-            # Emotion detection (phishing emails only)
-            f'KMeans-{emotion_clusters}': KMeans(n_clusters=emotion_clusters, random_state=42, n_init=10),
-            f'Gaussian-{emotion_clusters}': GaussianMixture(n_components=emotion_clusters, random_state=42),
+            'Naive Bayes': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', MultinomialNB())
+            ]),
             
-            # Alternative algorithms
-            'DBSCAN': DBSCAN(eps=0.5, min_samples=5),
-            'Hierarchical': AgglomerativeClustering(n_clusters=emotion_clusters)
+            'Random Forest': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', RandomForestClassifier(n_estimators=100, random_state=42, n_jobs=-1))
+            ]),
+            
+            'SVM': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', SVC(kernel='linear', random_state=42))
+            ]),
+            
+            'Gradient Boosting': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', GradientBoostingClassifier(n_estimators=100, random_state=42))
+            ])
         }
         
-        # Train unsupervised models with appropriate feature sets
-        for name, model in self.models.items():
-            print(f"Training {name} (unsupervised)...")
+        # Train each model
+        for name, model in self.phishing_models.items():
+            print(f"\nTraining {name}...")
             try:
-                # Choose appropriate features based on model
-                if 'Gaussian' in name or 'Hierarchical' in name:
-                    # Dense arrays for algorithms that need them
-                    X_train_features = self.X_train_semantic  # Use semantic embeddings
-                    feature_type = "semantic embeddings"
-                elif 'DBSCAN' in name:
-                    # DBSCAN works well with semantic embeddings
-                    X_train_features = self.X_train_semantic
-                    feature_type = "semantic embeddings"
-                else:
-                    # Sparse TF-IDF for KMeans
-                    X_train_features = self.X_train_vectorized
-                    feature_type = "TF-IDF sparse"
+                model.fit(self.X_train, self.y_phishing_train)
                 
-                print(f"  Using {feature_type} features")
-                model.fit(X_train_features)
-                print(f"✓ {name} trained successfully")
-                
-                # Analyze cluster quality
-                self._analyze_cluster_quality(model, X_train_features, name)
+                # Quick cross-validation score
+                cv_scores = cross_val_score(model, self.X_train, self.y_phishing_train, cv=5, scoring='f1_weighted')
+                print(f"  ✓ Trained successfully")
+                print(f"  Cross-validation F1: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
                 
             except Exception as e:
-                print(f"✗ Error training {name}: {e}")
+                print(f"  ✗ Error training {name}: {e}")
         
         return True
     
-    def _analyze_cluster_quality(self, model, X_features, model_name):
-        """Analyze cluster quality using silhouette score and inertia"""
-        try:
-            from sklearn.metrics import silhouette_score
+    def train_emotion_models(self):
+        """Train models for emotion classification (phishing emails only)"""
+        print("\n" + "="*70)
+        print("TRAINING EMOTION CLASSIFICATION MODELS (PHISHING EMAILS ONLY)")
+        print("="*70)
+        
+        # Filter to only phishing emails
+        phishing_mask_train = self.y_phishing_train == 'phishing'
+        phishing_mask_test = self.y_phishing_test == 'phishing'
+        
+        X_train_phishing = self.X_train[phishing_mask_train]
+        X_test_phishing = self.X_test[phishing_mask_test]
+        y_emotion_train_phishing = self.y_emotion_train[phishing_mask_train]
+        y_emotion_test_phishing = self.y_emotion_test[phishing_mask_test]
+        
+        print(f"Training on {len(X_train_phishing)} phishing emails")
+        print(f"Testing on {len(X_test_phishing)} phishing emails")
+        
+        # Store filtered data for later evaluation
+        self.X_test_phishing = X_test_phishing
+        self.y_emotion_test_phishing = y_emotion_test_phishing
+        
+        # Define models
+        self.emotion_models = {
+            'Logistic Regression': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 3), stop_words='english')),
+                ('clf', LogisticRegression(max_iter=1000, random_state=42, C=1.0))
+            ]),
             
-            if hasattr(model, 'labels_'):
-                # For models like DBSCAN
-                labels = model.labels_
-                n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-            elif hasattr(model, 'predict'):
-                # For models like KMeans, Gaussian Mixture
-                labels = model.predict(X_features)
-                n_clusters = len(set(labels))
-            else:
-                return
+            'Naive Bayes': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', MultinomialNB(alpha=0.1))
+            ]),
             
-            if n_clusters > 1 and len(set(labels)) > 1:
-                # Calculate silhouette score (higher is better: -1 to 1)
-                sil_score = silhouette_score(X_features, labels)
-                print(f"  Clusters found: {n_clusters}")
-                print(f"  Silhouette score: {sil_score:.4f}")
-                
-                # For KMeans, also show inertia
-                if hasattr(model, 'inertia_'):
-                    print(f"  Inertia (lower is better): {model.inertia_:.2f}")
-            else:
-                print(f"  Warning: Only {n_clusters} clusters found")
-                
-        except Exception as e:
-            print(f"  Could not analyze cluster quality: {e}")
-    
-    def evaluate_models(self):
-        """Evaluate unsupervised models against true labels"""
-        print("\nEvaluating models against TRUE LABELS...")
-        print("Now we reveal the labels to see how well unsupervised models captured patterns")
-        
-        self.results = {}
-        
-        for name, model in self.models.items():
-            print(f"\n{'='*60}")
-            print(f"Evaluating {name}")
-            print('='*60)
+            'Random Forest': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', RandomForestClassifier(n_estimators=200, max_depth=20, random_state=42, n_jobs=-1))
+            ]),
             
-            try:
-                # Get cluster assignments using appropriate features
-                if 'Gaussian' in name or 'Hierarchical' in name or 'DBSCAN' in name:
-                    # Use semantic embeddings for these models
-                    X_test_features = self.X_test_semantic
-                else:
-                    # Use TF-IDF for KMeans
-                    X_test_features = self.X_test_vectorized
-                
-                # Get predictions based on model type
-                if hasattr(model, 'labels_') and 'DBSCAN' in name:
-                    # DBSCAN doesn't predict, need to use fit_predict on test data
-                    # For evaluation, we'll use the training labels distribution
-                    cluster_pred = model.fit_predict(X_test_features)
-                else:
-                    cluster_pred = model.predict(X_test_features)
-                
-                self.results[name] = {'cluster_predictions': cluster_pred}
-                
-                # Only evaluate if model was trained successfully
-                if name in self.models and hasattr(self.models[name], '_check_is_fitted'):
-                    try:
-                        # Check if model is fitted
-                        self.models[name]._check_is_fitted()
-                        model_is_fitted = True
-                    except:
-                        model_is_fitted = False
-                else:
-                    model_is_fitted = True  # Assume fitted for other models
-                
-                if not model_is_fitted:
-                    print(f"Skipping evaluation - {name} was not successfully trained")
-                    continue
-                
-                # Evaluate against emotion labels if available (phishing emails only)
-                if self.phishing_emotion_labels is not None and len(self.phishing_emotion_test) > 0:
-                    print(f"\nEMOTION CLASSIFICATION EVALUATION (PHISHING EMAILS ONLY):")
-                    
-                    # Filter predictions to only phishing emails in test set
-                    phishing_test_mask = self.phishing_test == 'phishing'
-                    if phishing_test_mask.sum() > 0:
-                        phishing_cluster_pred = cluster_pred[phishing_test_mask]
-                        
-                        emotion_metrics = self._evaluate_clustering_against_labels(
-                            phishing_cluster_pred, self.phishing_emotion_test, 'emotion (phishing)'
-                        )
-                        self.results[name]['emotion_metrics'] = emotion_metrics
-                    else:
-                        print("  No phishing emails in test set for emotion evaluation")
-                
-                # Show cluster distribution
-                unique_clusters = len(set(cluster_pred))
-                print(f"\nClusters found in test data: {unique_clusters}")
-                print(f"Cluster distribution: {dict(zip(*np.unique(cluster_pred, return_counts=True)))}")
-                
-                # Evaluate against phishing labels if available  
-                if self.phishing_labels is not None:
-                    print(f"\nPHISHING DETECTION EVALUATION:")
-                    phishing_metrics = self._evaluate_clustering_against_labels(
-                        cluster_pred, self.phishing_test, 'phishing'
-                    )
-                    self.results[name]['phishing_metrics'] = phishing_metrics
-                    
-            except Exception as e:
-                print(f"✗ Error evaluating {name}: {e}")
-                self.results[name] = {'error': str(e)}
-        
-        return True
-    
-    def _evaluate_clustering_against_labels(self, cluster_pred, true_labels, label_type):
-        """Evaluate clustering results against true labels using basic metrics"""
-        from sklearn.metrics import adjusted_rand_score, f1_score, precision_score, accuracy_score
-        from sklearn.preprocessing import LabelEncoder
-        
-        # Convert string labels to numeric if needed
-        le = LabelEncoder()
-        true_labels_encoded = le.fit_transform(true_labels)
-        
-        # Calculate basic metrics
-        ari = adjusted_rand_score(true_labels_encoded, cluster_pred)
-        
-        # For F1, precision, accuracy we need to handle multi-class properly
-        f1 = f1_score(true_labels_encoded, cluster_pred, average='weighted')
-        precision = precision_score(true_labels_encoded, cluster_pred, average='weighted', zero_division=0)
-        accuracy = accuracy_score(true_labels_encoded, cluster_pred)
-        
-        print(f"  Adjusted Rand Index: {ari:.4f}")
-        print(f"  F1 Score: {f1:.4f}")
-        print(f"  Precision: {precision:.4f}")
-        print(f"  Accuracy: {accuracy:.4f}")
-        
-        # Show cluster-to-label mapping (simplified)
-        print(f"\n  Cluster to {label_type} mapping:")
-        mapping_df = pd.crosstab(cluster_pred, true_labels, margins=True)
-        print(mapping_df)
-        
-        # Also show encoded mapping for clarity
-        print(f"\n  Label encoding: {dict(zip(le.classes_, range(len(le.classes_))))}")
-        
-        return {
-            'ari': ari,
-            'f1': f1,
-            'precision': precision,
-            'accuracy': accuracy,
-            'mapping': mapping_df
+            'SVM': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', SVC(kernel='rbf', random_state=42, C=1.0))
+            ]),
+            
+            'Gradient Boosting': Pipeline([
+                ('tfidf', TfidfVectorizer(max_features=3000, ngram_range=(1, 2), stop_words='english')),
+                ('clf', GradientBoostingClassifier(n_estimators=100, random_state=42))
+            ])
         }
+        
+        # Train each model
+        for name, model in self.emotion_models.items():
+            print(f"\nTraining {name}...")
+            try:
+                model.fit(X_train_phishing, y_emotion_train_phishing)
+                
+                # Cross-validation
+                cv_scores = cross_val_score(model, X_train_phishing, y_emotion_train_phishing, 
+                                          cv=5, scoring='f1_weighted')
+                print(f"  ✓ Trained successfully")
+                print(f"  Cross-validation F1: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
+                
+            except Exception as e:
+                print(f"  ✗ Error training {name}: {e}")
+        
+        return True
     
-
+    def evaluate_phishing_models(self):
+        """Evaluate phishing detection models"""
+        print("\n" + "="*70)
+        print("EVALUATING PHISHING DETECTION MODELS")
+        print("="*70)
+        
+        for name, model in self.phishing_models.items():
+            print(f"\n{name}:")
+            print("-" * 50)
+            
+            try:
+                # Predictions
+                y_pred = model.predict(self.X_test)
+                
+                # Metrics
+                accuracy = accuracy_score(self.y_phishing_test, y_pred)
+                f1 = f1_score(self.y_phishing_test, y_pred, average='weighted')
+                precision, recall, _, _ = precision_recall_fscore_support(
+                    self.y_phishing_test, y_pred, average='weighted', zero_division=0
+                )
+                
+                print(f"Accuracy:  {accuracy:.4f}")
+                print(f"F1 Score:  {f1:.4f}")
+                print(f"Precision: {precision:.4f}")
+                print(f"Recall:    {recall:.4f}")
+                
+                # Store results
+                self.phishing_results[name] = {
+                    'accuracy': accuracy,
+                    'f1': f1,
+                    'precision': precision,
+                    'recall': recall,
+                    'predictions': y_pred
+                }
+                
+                # Classification report
+                print("\nClassification Report:")
+                print(classification_report(self.y_phishing_test, y_pred, zero_division=0))
+                
+                # Confusion matrix
+                cm = confusion_matrix(self.y_phishing_test, y_pred)
+                print("Confusion Matrix:")
+                print(cm)
+                
+            except Exception as e:
+                print(f"Error evaluating {name}: {e}")
+        
+        return True
+    
+    def evaluate_emotion_models(self):
+        """Evaluate emotion classification models"""
+        print("\n" + "="*70)
+        print("EVALUATING EMOTION CLASSIFICATION MODELS")
+        print("="*70)
+        
+        for name, model in self.emotion_models.items():
+            print(f"\n{name}:")
+            print("-" * 50)
+            
+            try:
+                # Predictions
+                y_pred = model.predict(self.X_test_phishing)
+                
+                # Metrics
+                accuracy = accuracy_score(self.y_emotion_test_phishing, y_pred)
+                f1 = f1_score(self.y_emotion_test_phishing, y_pred, average='weighted')
+                precision, recall, _, _ = precision_recall_fscore_support(
+                    self.y_emotion_test_phishing, y_pred, average='weighted', zero_division=0
+                )
+                
+                print(f"Accuracy:  {accuracy:.4f}")
+                print(f"F1 Score:  {f1:.4f}")
+                print(f"Precision: {precision:.4f}")
+                print(f"Recall:    {recall:.4f}")
+                
+                # Store results
+                self.emotion_results[name] = {
+                    'accuracy': accuracy,
+                    'f1': f1,
+                    'precision': precision,
+                    'recall': recall,
+                    'predictions': y_pred
+                }
+                
+                # Classification report
+                print("\nClassification Report:")
+                print(classification_report(self.y_emotion_test_phishing, y_pred, zero_division=0))
+                
+                # Confusion matrix
+                cm = confusion_matrix(self.y_emotion_test_phishing, y_pred)
+                print("Confusion Matrix:")
+                print(cm)
+                
+            except Exception as e:
+                print(f"Error evaluating {name}: {e}")
+        
+        return True
     
     def generate_summary(self):
-        """Generate a summary report of all results"""
+        """Generate summary report"""
         print("\n" + "="*80)
-        print("UNSUPERVISED LEARNING EVALUATION - FINAL RESULTS")
+        print("FINAL RESULTS SUMMARY")
         print("="*80)
         
-        # Create results directory if it doesn't exist
-        import os
+        # Create results directory
         os.makedirs('code/results', exist_ok=True)
         
-        # Create summary dataframe for emotion classification
-        if any('emotion_metrics' in results for results in self.results.values()):
-            print("\n" + "="*70)
-            print("EMOTION CLASSIFICATION RESULTS")
-            print("="*70)
-            
-            emotion_data = []
-            for name, results in self.results.items():
-                if 'emotion_metrics' in results:
-                    metrics = results['emotion_metrics']
-                    row = {
-                        'Model': name,
-                        'ARI': f"{metrics['ari']:.4f}",
-                        'F1': f"{metrics['f1']:.4f}", 
-                        'Precision': f"{metrics['precision']:.4f}",
-                        'Accuracy': f"{metrics['accuracy']:.4f}"
-                    }
-                    emotion_data.append(row)
-            
-            emotion_df = pd.DataFrame(emotion_data)
-            
-            # Enhanced table formatting
-            print(f"{'Model':<15} {'ARI':<8} {'F1':<8} {'Precision':<10} {'Accuracy':<10}")
-            print("-" * 60)
-            for _, row in emotion_df.iterrows():
-                print(f"{row['Model']:<15} {row['ARI']:<8} {row['F1']:<8} {row['Precision']:<10} {row['Accuracy']:<10}")
-            
-            # Find and highlight best model
-            best_idx = emotion_df['F1'].astype(float).idxmax()
-            best_model = emotion_df.loc[best_idx]
-            best_f1 = float(best_model['F1'])
-            
-            print("-" * 60)
-            print(f"BEST MODEL: {best_model['Model']} (F1: {best_model['F1']})")
-            
-            emotion_df.to_csv('code/results/emotion_clustering_results.csv', index=False)
-            print(f"Detailed results: code/results/emotion_clustering_results.csv")
-        
-        # Create summary dataframe for phishing detection
-        if any('phishing_metrics' in results for results in self.results.values()):
-            print("\n" + "="*70)
-            print("PHISHING DETECTION RESULTS")
-            print("="*70)
-            
-            phishing_data = []
-            for name, results in self.results.items():
-                if 'phishing_metrics' in results:
-                    metrics = results['phishing_metrics']
-                    row = {
-                        'Model': name,
-                        'ARI': f"{metrics['ari']:.4f}",
-                        'F1': f"{metrics['f1']:.4f}",
-                        'Precision': f"{metrics['precision']:.4f}",
-                        'Accuracy': f"{metrics['accuracy']:.4f}"
-                    }
-                    phishing_data.append(row)
-            
-            phishing_df = pd.DataFrame(phishing_data)
-            
-            # Enhanced table formatting
-            print(f"{'Model':<15} {'ARI':<8} {'F1':<8} {'Precision':<10} {'Accuracy':<10}")
-            print("-" * 60)
-            for _, row in phishing_df.iterrows():
-                print(f"{row['Model']:<15} {row['ARI']:<8} {row['F1']:<8} {row['Precision']:<10} {row['Accuracy']:<10}")
-            
-            # Find and highlight best model
-            best_idx = phishing_df['F1'].astype(float).idxmax()
-            best_model = phishing_df.loc[best_idx]
-            best_f1 = float(best_model['F1'])
-            
-            print("-" * 60)
-            print(f"BEST MODEL: {best_model['Model']} (F1: {best_model['F1']})")
-            
-            phishing_df.to_csv('code/results/phishing_clustering_results.csv', index=False)
-            print(f"Detailed results: code/results/phishing_clustering_results.csv")
-        
-        # Final summary
+        # Phishing detection summary
         print("\n" + "="*70)
-        print("SUMMARY COMPLETE")
+        print("PHISHING DETECTION RESULTS")
         print("="*70)
-        print("All results saved to CSV files in 'code/results/' directory")
-        print("Best models highlighted above for each task")
+        
+        phishing_data = []
+        for name, results in self.phishing_results.items():
+            phishing_data.append({
+                'Model': name,
+                'Accuracy': f"{results['accuracy']:.4f}",
+                'F1': f"{results['f1']:.4f}",
+                'Precision': f"{results['precision']:.4f}",
+                'Recall': f"{results['recall']:.4f}"
+            })
+        
+        phishing_df = pd.DataFrame(phishing_data)
+        print(phishing_df.to_string(index=False))
+        
+        # Find best model
+        best_phishing = max(self.phishing_results.items(), key=lambda x: x[1]['f1'])
+        print(f"\nBEST MODEL: {best_phishing[0]}")
+        print(f"F1 Score: {best_phishing[1]['f1']:.4f}")
+        
+        phishing_df.to_csv('code/results/supervised_phishing_results.csv', index=False)
+        
+        # Emotion classification summary
+        print("\n" + "="*70)
+        print("EMOTION CLASSIFICATION RESULTS (PHISHING EMAILS ONLY)")
+        print("="*70)
+        
+        emotion_data = []
+        for name, results in self.emotion_results.items():
+            emotion_data.append({
+                'Model': name,
+                'Accuracy': f"{results['accuracy']:.4f}",
+                'F1': f"{results['f1']:.4f}",
+                'Precision': f"{results['precision']:.4f}",
+                'Recall': f"{results['recall']:.4f}"
+            })
+        
+        emotion_df = pd.DataFrame(emotion_data)
+        print(emotion_df.to_string(index=False))
+        
+        # Find best model
+        best_emotion = max(self.emotion_results.items(), key=lambda x: x[1]['f1'])
+        print(f"\nBEST MODEL: {best_emotion[0]}")
+        print(f"F1 Score: {best_emotion[1]['f1']:.4f}")
+        
+        emotion_df.to_csv('code/results/supervised_emotion_results.csv', index=False)
+        
+        print("\n" + "="*70)
+        print("Results saved to 'code/results/' directory")
+        print("="*70)
         
         return True
     
     def run_pipeline(self):
-        """Run the complete ML pipeline"""
-        print("Starting Machine Learning Pipeline...")
+        """Run the complete supervised ML pipeline"""
+        print("="*80)
+        print("SUPERVISED MACHINE LEARNING PIPELINE")
         print("="*80)
         
-        # Execute pipeline steps
         steps = [
-            self.load_data,
-            self.prepare_data,
-            self.split_data,
-            self.vectorize_text,
-            self.train_models,
-            self.evaluate_models,
-            self.generate_summary
+            ('Loading data', self.load_data),
+            ('Preparing data', self.prepare_data),
+            ('Splitting data', self.split_data),
+            ('Training phishing models', self.train_phishing_models),
+            ('Training emotion models', self.train_emotion_models),
+            ('Evaluating phishing models', self.evaluate_phishing_models),
+            ('Evaluating emotion models', self.evaluate_emotion_models),
+            ('Generating summary', self.generate_summary)
         ]
         
-        for step in steps:
-            if not step():
-                print(f"Pipeline failed at step: {step.__name__}")
+        for step_name, step_func in steps:
+            print(f"\n{'='*80}")
+            print(f"STEP: {step_name.upper()}")
+            print('='*80)
+            if not step_func():
+                print(f"\nPipeline failed at: {step_name}")
                 return False
         
         print("\n" + "="*80)
-        print("Pipeline completed successfully!")
+        print("PIPELINE COMPLETED SUCCESSFULLY")
         print("="*80)
         return True
 
 def main():
-    """Main function to run the ML pipeline"""
-    # Initialize pipeline with your dataset path
-    # CSV headers: id,text,emotion,prompt_type,label
-    dataset_path = 'code/combined_dataset.csv'  # Change this to your actual file path
+    """Main function"""
+    dataset_path = 'code/combined_emails_dataset.csv'
     
-    pipeline = MLPipeline(dataset_path)
+    pipeline = SupervisedMLPipeline(dataset_path)
     pipeline.run_pipeline()
 
 if __name__ == "__main__":

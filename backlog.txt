@@ -1,5 +1,12 @@
 This file contains what has been done on a per-week basis.
 
+1st - 5th of December:
+- Incrementally improved chapters 3 and 4.
+- Refined pipeline placeholder replacement to include suspicious links.
+- Merged preprocessing code files into a single dataset_processor.py file.
+- Restructured code files for ease of use.
+- Swapped unsupervised model for a supervised one.
+
 24th - 28th of November:
 - 2nd semester work proposal development
 - Refinement of the thesis structure and outline.
