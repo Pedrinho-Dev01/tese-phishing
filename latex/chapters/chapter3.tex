@@ -4,13 +4,13 @@ As established in the previous chapter, machine learning model performance depen
 
 \section{Dataset Creation Methodology}
 
-No publicly available datasets exist for fine-grained emotional analysis of phishing emails, necessitating the development of a custom corpus. Following Oxford ``Developing Linguistic Corpora'' guidelines \cite{ota2023guidelines} and TEI principles \cite{tei2023guidelines}, we employed a hybrid approach combining an established baseline corpus from \cite{Fernandes2024} with systematic LLM-based augmentation \cite{baroni2009web}.
+No publicly available datasets exist for fine-grained emotional analysis of phishing emails, necessitating the development of a custom corpus. Following Oxford ``Developing Linguistic Corpora'' guidelines \cite{ota2023guidelines} and TEI principles \cite{tei2023guidelines}, we employed a hybrid approach utilizing an established baseline corpus from \cite{Fernandes2024} as input for systematic LLM-based generation \cite{baroni2009web}.
 
 The baseline corpus contained 480 manually curated email samples with fourteen emotional category annotations, meeting established quality standards \cite{hunston2002corpora}. All samples were pre-validated for structural integrity and consistency, requiring no additional preprocessing.
 
-Corpus augmentation used systematic prompt engineering with few-shot learning principles \cite{brown2020language,wang2023synthetic}. Exemplars from each emotional category provided conditioning context for the Ollama LLM:
+LLM-based generation used systematic prompt engineering with few-shot learning principles \cite{brown2020language,wang2023synthetic}. Exemplars from the baseline corpus provided conditioning context for the Ollama LLM to generate additional phishing emails:
 
-\begin{tcolorbox}[colback=gray!10, colframe=gray!60, title={Standardized Prompt Template for Corpus Augmentation}]
+\begin{tcolorbox}[colback=gray!10, colframe=gray!60, title={Standardized Prompt Template for LLM-based Generation}]
 \textbf{Prompt Structure:} Based on these examples of emails expressing `\{emotion\}', generate 1 new realistic phishing email that captures the same emotional tone and psychological manipulation strategy. Ensure the generated content maintains professional linguistic coherence while evoking the target emotion of \{emotion\}.
 
 \textbf{Output Specification:} Generate only the email content with no additional explanatory text or metadata.
@@ -18,7 +18,7 @@ Corpus augmentation used systematic prompt engineering with few-shot learning pr
 \textbf{Contextual Examples:} \textit{[Curated exemplars from baseline corpus]}
 \end{tcolorbox}
 
-This methodology produced a balanced corpus of 10,000 samples with uniform distribution across fourteen emotional categories (~714 per category). The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2018ethics}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}.
+This methodology produced a balanced corpus of 10,000 samples with uniform distribution across fourteen emotional categories (~714 per category). The LLM generation process, conditioned on the baseline corpus exemplars, ensured consistency with established phishing patterns while maintaining emotional category fidelity. The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2018ethics}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}.
 
 Below is an example of a generated email for the emotion ``Admiration'':
 
@@ -68,7 +68,7 @@ Each category was operationally defined with precise criteria and exemplars from
 
 \section{Annotation Implementation}
 
-The annotation phase followed established collaborative annotation principles \cite{fort2011amazon}. While synthetic generation provided initial labels, comprehensive manual validation was necessary to ensure accuracy and eliminate systematic biases \cite{wang2023synthetic}.
+The annotation phase followed established collaborative annotation principles \cite{fort2011amazon}. All generated samples received explicit emotional category labels during the LLM generation process, with each sample labeled based on the emotional category prompt provided to the model. However, comprehensive manual validation was necessary to ensure accuracy and eliminate systematic biases inherent in synthetic generation \cite{wang2023synthetic}.
 
 The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2018content}. We deployed the Doccano collaborative platform \cite{doccano} on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
 
