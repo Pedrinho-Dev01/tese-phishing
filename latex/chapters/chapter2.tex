@@ -113,13 +113,15 @@ Multi-dimensional emotion analysis has shown particular promise for identifying 
 
 Several challenges remain in applying sentiment analysis to phishing detection:
 
-\textbf{Dataset Limitations:} Most existing phishing datasets lack fine-grained emotional annotations, limiting the development of sophisticated sentiment-aware detection systems \cite{abu2018phishing}.
-
-\textbf{Cultural and Linguistic Variation:} Emotional expression varies significantly across cultures and languages, requiring localized sentiment models for global deployment \cite{mohammad2016sentiment}.
-
-\textbf{Adversarial Adaptation:} As sentiment-based detection becomes more prevalent, attackers may adapt their emotional manipulation strategies to evade detection \cite{biggio2018wild}.
-
-\textbf{Contextual Complexity:} The same emotional content may be legitimate in one context (e.g., marketing emails) but suspicious in another (e.g., urgent IT support requests) \cite{felt2017rethinking}.
+\begin{itemize}
+    \item \textbf{Dataset Limitations:} Most existing phishing datasets lack fine-grained emotional annotations, limiting the development of sophisticated sentiment-aware detection systems \cite{abu2018phishing}.
+    
+    \item \textbf{Cultural and Linguistic Variation:} Emotional expression varies significantly across cultures and languages, requiring localized sentiment models for global deployment \cite{mohammad2016sentiment}.
+    
+    \item \textbf{Adversarial Adaptation:} As sentiment-based detection becomes more prevalent, attackers may adapt their emotional manipulation strategies to evade detection \cite{biggio2018wild}.
+    
+    \item \textbf{Contextual Complexity:} The same emotional content may be legitimate in one context (e.g., marketing emails) but suspicious in another (e.g., urgent IT support requests) \cite{felt2017rethinking}.
+\end{itemize}
 
 As such, it is clear that a well-annotated dataset with fine-grained sentiment labels, not just positive/negative classifications, could provide valuable insights into the emotional manipulation tactics used in phishing emails, and potentially improve detection performance significantly \cite{sun2019fine}.
 
@@ -153,39 +155,45 @@ In addition, there has been increasing interest in synthetic or augmented datase
 
 Synthetic generation addresses several critical challenges in phishing dataset creation \cite{wang2023synthetic}:
 
-\textbf{Ethical Considerations:} Generating synthetic phishing emails avoids the ethical and legal complexities of collecting real malicious content while protecting victim privacy.
-
-\textbf{Scale and Diversity:} Automated generation can produce large-scale datasets with controlled variation in attack strategies, target organizations, and linguistic patterns.
-
-\textbf{Temporal Relevance:} Synthetic datasets can incorporate current events, trending topics, and evolving social engineering techniques that may not be present in historical collections.
-
-\textbf{Balanced Representation:} Generation frameworks can ensure balanced coverage of different attack types, emotional manipulation strategies, and target demographics.
+\begin{itemize}
+    \item \textbf{Ethical Considerations:} Generating synthetic phishing emails avoids the ethical and legal complexities of collecting real malicious content while protecting victim privacy.
+    
+    \item \textbf{Scale and Diversity:} Automated generation can produce large-scale datasets with controlled variation in attack strategies, target organizations, and linguistic patterns.
+    
+    \item \textbf{Temporal Relevance:} Synthetic datasets can incorporate current events, trending topics, and evolving social engineering techniques that may not be present in historical collections.
+    
+    \item \textbf{Balanced Representation:} Generation frameworks can ensure balanced coverage of different attack types, emotional manipulation strategies, and target demographics.
+\end{itemize}
 
 \subsection{Dataset Quality and Evaluation Metrics}
 
 The proliferation of diverse datasets has highlighted the need for standardized quality metrics and evaluation frameworks \cite{stringhini2010detecting}. Key quality dimensions include:
 
-\textbf{Temporal Validity:} The extent to which datasets reflect current phishing tactics and communication patterns \cite{abu2018temporal}.
-
-\textbf{Attack Vector Coverage:} Comprehensive representation of different phishing strategies, from credential harvesting to business email compromise \cite{ho2017detecting}.
-
-\textbf{Linguistic Diversity:} Inclusion of multiple languages, cultural contexts, and communication styles to ensure global applicability \cite{ramanathan2018cross}.
-
-\textbf{Annotation Consistency:} Standardized labeling schemes that enable cross-dataset comparison and meta-learning approaches \cite{merton2020annotation}.
+\begin{itemize}
+    \item \textbf{Temporal Validity:} The extent to which datasets reflect current phishing tactics and communication patterns \cite{abu2018temporal}.
+    
+    \item \textbf{Attack Vector Coverage:} Comprehensive representation of different phishing strategies, from credential harvesting to business email compromise \cite{ho2017detecting}.
+    
+    \item \textbf{Linguistic Diversity:} Inclusion of multiple languages, cultural contexts, and communication styles to ensure global applicability \cite{ramanathan2018cross}.
+    
+    \item \textbf{Annotation Consistency:} Standardized labeling schemes that enable cross-dataset comparison and meta-learning approaches \cite{merton2020annotation}.
+\end{itemize}
 
 \subsection{Critical Gaps and Future Needs}
 
 Despite significant progress, several critical gaps remain in current phishing datasets:
 
-\textbf{Emotion and Sentiment Annotations:} As established in the previous section, most datasets lack fine-grained emotional annotations necessary for sentiment-aware detection systems. This gap directly limits the development of psychologically-informed detection approaches \cite{abdelhamid2022emotion}.
-
-\textbf{Multi-Modal Integration:} Few datasets provide comprehensive integration of textual content, header metadata, HTML structure, and attachment information in standardized formats \cite{oest2020phishfarm}.
-
-\textbf{Longitudinal Attack Evolution:} Limited availability of datasets that track the evolution of specific phishing campaigns over time, hindering research into adaptive detection mechanisms \cite{ramzan2009phishing}.
-
-\textbf{Cross-Platform Consistency:} Most datasets focus exclusively on email-based phishing, with limited coverage of SMS, social media, and messaging platform attacks that employ similar psychological tactics \cite{alnajim2021cross}.
-
-\textbf{Adversarial Robustness:} Insufficient representation of adversarially-crafted emails designed to evade existing detection systems \cite{nelson2008adversarial}.
+\begin{itemize}
+    \item \textbf{Emotion and Sentiment Annotations:} As established in the previous section, most datasets lack fine-grained emotional annotations necessary for sentiment-aware detection systems. This gap directly limits the development of psychologically-informed detection approaches \cite{abdelhamid2022emotion}.
+    
+    \item \textbf{Multi-Modal Integration:} Few datasets provide comprehensive integration of textual content, header metadata, HTML structure, and attachment information in standardized formats \cite{oest2020phishfarm}.
+    
+    \item \textbf{Longitudinal Attack Evolution:} Limited availability of datasets that track the evolution of specific phishing campaigns over time, hindering research into adaptive detection mechanisms \cite{ramzan2009phishing}.
+    
+    \item \textbf{Cross-Platform Consistency:} Most datasets focus exclusively on email-based phishing, with limited coverage of SMS, social media, and messaging platform attacks that employ similar psychological tactics \cite{alnajim2021cross}.
+    
+    \item \textbf{Adversarial Robustness:} Insufficient representation of adversarially-crafted emails designed to evade existing detection systems \cite{nelson2008adversarial}.
+\end{itemize}
 
 Together, these efforts reflect a clear evolution: while early works relied on small, static corpora, the current state of the art emphasizes large, diverse, and dynamically updated datasets. These developments also highlight the need for open, realistic .eml-based datasets that preserve the structural, textual, and metadata features of modern phishing campaigns while incorporating fine-grained emotional annotations—a gap that directly motivates the construction of new datasets like the one proposed in this thesis.
 
