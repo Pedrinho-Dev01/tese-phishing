@@ -1,6 +1,8 @@
 This file contains what has been done on a per-week basis.
 
 8th - 12th of December:
+- Updated Chapter 2 Structure
+- Reviewed and improved Chapter 3
 
 1st - 5th of December:
 - Incrementally improved chapters 3 and 4.
