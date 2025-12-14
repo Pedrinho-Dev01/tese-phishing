@@ -436,7 +436,7 @@ def main():
     # Run the complete pipeline
     success = processor.run_complete_pipeline(
         nonphishing_file='code/generated_10k_nonphishing_emails.csv',
-        phishing_file='code/generated_10k_emails.csv',
+        phishing_file='code/base_annotations.csv',
         output_file='code/combined_emails_dataset.csv'
     )
     
