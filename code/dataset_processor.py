@@ -153,6 +153,46 @@ def replace_placeholders(text):
     return text
 
 # ============================================================================
+# TEXT CLEANING FUNCTIONS
+# ============================================================================
+
+def strip_trailing_artifacts(text):
+    """Remove any trailing artifacts such as content after a separator line.
+
+    Generic cleanup targeting lines like '---' used as separators and anything
+    that follows them. Also includes conservative fallback for common disclaimer
+    starters if a separator isn't present.
+    """
+    if pd.isna(text) or not isinstance(text, str):
+        return text
+
+    # Normalize newlines for consistent processing
+    s = text.replace("\r\n", "\n").replace("\r", "\n")
+
+    # Primary rule: truncate at the first line containing 3+ hyphens or em-dashes
+    sep_match = re.search(r"(?m)^\s*[-—]{3,}\s*$", s)
+    if sep_match:
+        return s[:sep_match.start()].rstrip()
+
+    # Conservative fallback: truncate at common disclaimer starters if present
+    # Only applied when separators are not found.
+    disclaimer_patterns = [
+        r"(?mi)^\s*please\s+note\b",
+        r"(?mi)^\s*disclaimer\s*:",
+        r"(?mi)^\s*note\s*:"
+    ]
+    earliest = None
+    for pat in disclaimer_patterns:
+        m = re.search(pat, s)
+        if m and (earliest is None or m.start() < earliest.start()):
+            earliest = m
+
+    if earliest:
+        return s[:earliest.start()].rstrip()
+
+    return s
+
+# ============================================================================
 # COLUMN REMOVAL FUNCTIONS
 # ============================================================================
 
@@ -251,10 +291,40 @@ class DatasetProcessor:
         
         return True
         
+    def clean_text_artifacts(self):
+        """Clean trailing artifacts (e.g., content after '---') in text columns"""
+        print("\n" + "=" * 80)
+        print("STEP 1: CLEANING TEXT ARTIFACTS")
+        print("=" * 80)
+
+        # Clean non-phishing dataset
+        if self.df_nonphishing is not None and 'text' in self.df_nonphishing.columns:
+            print("Cleaning non-phishing text artifacts...")
+            original_sample = (self.df_nonphishing['text'].iloc[0] or '')
+            cleaned_series = self.df_nonphishing['text'].apply(strip_trailing_artifacts)
+            changed_count = (self.df_nonphishing['text'] != cleaned_series).sum()
+            self.df_nonphishing['text'] = cleaned_series
+            print(f"  ✓ Cleaned {changed_count} entries in non-phishing dataset")
+            cleaned_sample = self.df_nonphishing['text'].iloc[0][:100] + "..."
+            print(f"  Sample after clean: {cleaned_sample}")
+
+        # Clean phishing dataset
+        if self.df_phishing is not None and 'text' in self.df_phishing.columns:
+            print("\nCleaning phishing text artifacts...")
+            original_sample = (self.df_phishing['text'].iloc[0] or '')
+            cleaned_series = self.df_phishing['text'].apply(strip_trailing_artifacts)
+            changed_count = (self.df_phishing['text'] != cleaned_series).sum()
+            self.df_phishing['text'] = cleaned_series
+            print(f"  ✓ Cleaned {changed_count} entries in phishing dataset")
+            cleaned_sample = self.df_phishing['text'].iloc[0][:100] + "..."
+            print(f"  Sample after clean: {cleaned_sample}")
+
+        return True
+
     def process_placeholders(self):
         """Replace placeholders in text columns"""
         print("\n" + "=" * 80)
-        print("STEP 1: REPLACING PLACEHOLDERS")
+        print("STEP 2: REPLACING PLACEHOLDERS")
         print("=" * 80)
         
         # Process non-phishing dataset
@@ -286,7 +356,7 @@ class DatasetProcessor:
     def remove_unwanted_columns(self):
         """Remove prompt_type columns if they exist"""
         print("\n" + "=" * 80)
-        print("STEP 2: REMOVING UNWANTED COLUMNS")
+        print("STEP 3: REMOVING UNWANTED COLUMNS")
         print("=" * 80)
         
         # Remove from non-phishing
@@ -300,7 +370,7 @@ class DatasetProcessor:
     def balance_and_combine_datasets(self):
         """Balance emotions and combine datasets"""
         print("\n" + "=" * 80)
-        print("STEP 3: BALANCING AND COMBINING DATASETS")
+        print("STEP 4: BALANCING AND COMBINING DATASETS")
         print("=" * 80)
         
         print(f"Original dataset sizes:")
@@ -362,7 +432,7 @@ class DatasetProcessor:
     def save_processed_dataset(self, output_file='code/combined_emails_dataset.csv'):
         """Save the final processed dataset"""
         print("\n" + "=" * 80)
-        print("STEP 4: SAVING PROCESSED DATASET")
+        print("STEP 5: SAVING PROCESSED DATASET")
         print("=" * 80)
         
         if self.df_combined is None:
@@ -405,6 +475,7 @@ class DatasetProcessor:
         
         steps = [
             ("Loading datasets", lambda: self.load_datasets(nonphishing_file, phishing_file)),
+            ("Cleaning text artifacts", self.clean_text_artifacts),
             ("Processing placeholders", self.process_placeholders),
             ("Removing unwanted columns", self.remove_unwanted_columns),
             ("Balancing and combining", self.balance_and_combine_datasets),
