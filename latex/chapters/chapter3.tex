@@ -47,14 +47,16 @@ Warmest regards,
 
 We developed a comprehensive annotation framework following established best practices \cite{artstein2017annotation,luedeling2009oxford} to optimize inter-annotator agreement, minimize bias, and establish clear decision criteria for emotional category assignment.
 
+\subsection{Dataset Preparation}
+
+Before the annotation process could begin, the dataset underwent a few preparation steps to ensure quality and consistency. First, all samples were stripped of any additional text or metadata introduced during LLM generation, retaining only the email content. Next, a substitution process replaced placeholder tokens (e.g., [Recipient], [suspicious link]) with realistic yet non-identifiable values to enhance authenticity and remove any direct identifiers while preserving the overall structure and intent of the emails. Finally, a random shuffle was applied to the dataset to eliminate any ordering biases introduced during generation.
+
 \subsection{Annotation Protocol}
 
 The annotation methodology followed four key protocols \cite{fort2011amazon}:
 
 \begin{enumerate}
     \item \textbf{Multi-label Classification:} Annotators could assign multiple emotional labels to single emails, acknowledging that phishing communications often employ mixed emotional appeals \cite{cialdini2021influence}.
-    
-    \item \textbf{Mandatory Labeling:} Every email required at least one emotional label to ensure complete coverage and prevent unlabeled instances \cite{krippendorff2018content}.
     
     \item \textbf{Uncertainty Handling:} When emotional determination was ambiguous, annotators assigned the ``UNSURE'' label to prevent forced categorization \cite{aroyo2015truth}.
     
@@ -73,6 +75,7 @@ The annotation phase followed established collaborative annotation principles \c
 
 The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2018content}. We deployed the Doccano collaborative platform \cite{doccano} on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
 
+\newpage
 \section{Current Dataset Status}
 As of this writing, the dataset creation has been completed, and the annotation process is underway, with 1843 completed annotations. The final dataset is expected to be ready for model training and evaluation in the coming months. 
 

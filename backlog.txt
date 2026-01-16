@@ -2,6 +2,7 @@ This file contains what has been done on a per-week basis.
 
 12th - 16th of January:
 - Chapter 2 Revamp
+- Chapter 5
 - Annotation Statistics 
 - Finalized pre-thesis document.
 - Prepared presentation slides for thesis defense.

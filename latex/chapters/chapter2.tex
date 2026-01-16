@@ -1,12 +1,12 @@
 \chapter{State of the Art}
 
-This chapter provides a comprehensive examination of the current state of research in phishing email detection, with particular emphasis on machine learning approaches and the emerging role of sentiment analysis. The chapter is structured to first establish the technical foundations of email communication and phishing attacks, followed by an in-depth analysis of detection methodologies, and concluding with an examination of available datasets and their limitations. This review identifies critical gaps in existing research that motivate the work presented in subsequent chapters.
+This chapter provides a comprehensive examination of the current state of research in phishing email detection, with particular emphasis on machine learning approaches and the emerging role of sentiment analysis.
 
 \section{Email Communication: Technical Foundations and Security Implications}
 
 \subsection{Email Architecture and Standards}
 
-Electronic mail (e-mail) represents one of the most enduring and ubiquitous forms of digital communication, with an estimated 4.37 billion users worldwide and over 333 billion emails sent daily as of 2023. Despite the proliferation of alternative communication platforms, email remains the dominant medium for formal business communication, personal correspondence, and increasingly, as a primary vector for sophisticated cyber attacks.
+Electronic mail (e-mail) represents one of the most enduring and ubiquitous forms of digital communication, with an estimated 4.37 billion users worldwide and over 347 billion emails sent daily as of 2023. Despite the proliferation of alternative communication platforms, email remains the dominant medium for formal business communication, personal correspondence, and increasingly, as a primary vector for sophisticated cyber attacks.
 
 The technical architecture of email is governed by a suite of Internet standards that define message format, transmission protocols, and security mechanisms. At its core, the Internet Message Format standard (\acs{RFC} 5322) specifies the structure of email messages, including mandatory header fields (From, Date, To) and optional fields (Subject, Reply-To, CC, BCC) that provide metadata about message routing and handling \cite{rfc5322}. 
 
@@ -75,9 +75,9 @@ The availability and rapidly increasing accessibility of large language models h
 
 \subsection{Defense Mechanisms and Current Limitations}
 
-Email authentication protocols, including \acf{SPF}, \acf{DKIM}, and \acf{DMARC}, provide technical mechanisms for verifying sender domain authenticity and detecting spoofed messages that falsely claim to originate from particular domains \cite{DEROUET20165}. These protocols function by allowing domain administrators to cryptographically authorize mail servers and message signatures, enabling receiving servers to validate that messages actually originate from authorized sources. However, these authentication mechanisms face several significant practical limitations. They are not universally implemented across the global email infrastructure, many organizations have not yet deployed these protocols, allowing their domains to be spoofed with impunity. When implemented, they can be misconfigured in ways that fail to prevent abuse. Most significantly, they do not prevent attacks originating from legitimately compromised accounts, since compromised legitimate accounts produce messages that pass all authentication checks by definition. Furthermore, authentication protocols address only sender identity verification without evaluating message content, intent, emotional manipulation tactics, or likelihood of being malicious.
+Email authentication protocols, including \ac{SPF}, \ac{DKIM}, and \ac{DMARC}, provide technical mechanisms for verifying sender domain authenticity and detecting spoofed messages that falsely claim to originate from particular domains \cite{DEROUET20165}. These protocols function by allowing domain administrators to cryptographically authorize mail servers and message signatures, enabling receiving servers to validate that messages actually originate from authorized sources. However, these authentication mechanisms face several significant practical limitations. They are not universally implemented across the global email infrastructure, many organizations have not yet deployed these protocols, allowing their domains to be spoofed with impunity. When implemented, they can be misconfigured in ways that fail to prevent abuse. Most significantly, they do not prevent attacks originating from legitimately compromised accounts, since compromised legitimate accounts produce messages that pass all authentication checks by definition. Furthermore, authentication protocols address only sender identity verification without evaluating message content, intent, emotional manipulation tactics, or likelihood of being malicious.
 
-Transport security mechanisms, including \acf{MTA-STS} and \ac{TLS} reporting protocols, ensure secure message transmission between mail servers, preventing interception or tampering during transit between systems. While these mechanisms provide value by protecting message integrity and confidentiality during transmission, they do nothing to address phishing content that is transmitted legitimately between mail servers, as the authentication and encryption layers at the transport level remain completely agnostic to message intent, credibility, or whether the sender is impersonating another entity.
+Transport security mechanisms, including \ac{MTA-STS} and \ac{TLS} reporting protocols, ensure secure message transmission between mail servers, preventing interception or tampering during transit between systems. While these mechanisms provide value by protecting message integrity and confidentiality during transmission, they do nothing to address phishing content that is transmitted legitimately between mail servers, as the authentication and encryption layers at the transport level remain completely agnostic to message intent, credibility, or whether the sender is impersonating another entity.
 
 URL reputation systems, such as Google Safe Browsing and various commercial threat intelligence feeds, maintain continuously updated databases of known malicious URLs and block or flag access to identified phishing sites through browser integration or email gateway filtering. These systems are fundamentally reactive by nature, requiring that specific URLs be identified as malicious through reports from affected users, automated scanning, or security researchers before they can be blocked. This reactive posture creates an inherent window of vulnerability during which zero-day phishing sites remain active and dangerous, particularly in targeted campaigns where victim counts are small and unlikely to trigger community-based detection systems.
 
@@ -109,7 +109,7 @@ Despite these limitations, classical \ac{ML} approaches with engineered features
 
 \subsection{Third Generation: Early Deep Learning Approaches}
 
-The deep learning revolution of the 2010s introduced neural network architectures capable of automatically learning feature representations from raw data, potentially eliminating the feature engineering bottleneck. Researchers began applying Convolutional Neural Networks (\acp{CNN}), Recurrent Neural Networks (\acp{RNN}), and Long Short-Term Memory (\acs{LSTM}) networks to phishing detection \cite{fang2020deep}.
+The deep learning revolution of the 2010s introduced neural network architectures capable of automatically learning feature representations from raw data, potentially eliminating the feature engineering bottleneck. Researchers began applying \ac{CNN}, \ac{RNN}, and \ac{LSTM} networks to phishing detection \cite{fang2020deep}.
 
 \acp{CNN} were employed to identify spatial patterns in email structure, treating HTML or text as quasi-image data where local patterns (specific phrase combinations, HTML structures) could be detected through convolutional filters. \acp{RNN} and \acp{LSTM} were applied to capture sequential dependencies in email text, enabling the model to understand how meaning evolves throughout a message and to detect manipulation tactics that span multiple sentences or sections.
 
@@ -241,8 +241,6 @@ The effectiveness of machine learning-based phishing detection systems is fundam
 
 \subsection{Historical and Legacy Datasets}
 
-\subsubsection{Early Foundational Corpora}
-
 The earliest phishing detection research relied heavily on datasets that were not originally designed for security applications but were repurposed due to the lack of alternatives. The Enron E-mail Corpus (2004), released during litigation following Enron's collapse, contains approximately 500,000 emails from Enron executives and employees \cite{klimt2004enron}. While invaluable as a source of genuine business correspondence and widely used to establish baseline patterns of legitimate email communication, the Enron corpus has significant limitations for contemporary phishing research. Its corporate-centric language patterns, hierarchical communication structures, and 2000-2002 temporal frame do not reflect modern email usage, particularly in consumer or cross-organizational contexts. Moreover, it contains no phishing samples, limiting its utility to serving as a source of legitimate email baselines. Zhou et al. documented additional concerns about data quality, noting that organizational email corpora require careful preprocessing to remove duplicates, automatically generated messages, and other artifacts that might bias downstream analysis \cite{zhou2007strategies}.
 
 Another example is the SpamAssassin Public Corpus (2002), one of the earliest publicly available email datasets, containing approximately 6,000 emails labeled as spam or legitimate ("ham") \cite{metsis2006spam}. While historically important for spam filtering research, this corpus predates modern phishing techniques and contains primarily traditional spam, such as advertising and scams, rather than the sophisticated social engineering attacks that characterize contemporary phishing. Its small size and age limit its relevance for current research.
@@ -253,33 +251,31 @@ These legacy datasets established important precedents for corpus-based security
 
 \subsection{Community-Driven and Collaborative Initiatives}
 
-Recognition of legacy datasets' limitations motivated the development of community-driven efforts to continuously collect and share phishing data:
+A prominent example of a community-driven initiative is PhishTank, operated by OpenDNS (now part of Cisco). PhishTank serves as a collaborative clearing house for phishing URLs, updated continuously by community submissions \cite{phishtank2023}. The platform offers real-time updates that reflect current attack campaigns and benefits from global coverage through contributions from security researchers worldwide, as well as public API access for research purposes. However, PhishTank is primarily focused on URLs rather than complete email artifacts, which makes it less suitable for research that requires full message structure, headers, or body content analysis \cite{mahmoud2023phishing}. The community-driven validation model, while enabling scale, can introduce potential label quality issues when submissions are mislabeled or when legitimate-but-hacked sites are incorrectly classified. Moore and Edelman's analysis of URL-based detection systems also highlighted additional challenges, such as the time lag between attack launch and community detection, during which URLs remain active and dangerous \cite{moore2009measuring}.
 
+Another major collaborative resource is the APWG eCrime Exchange, maintained by the Anti-Phishing Working Group. This repository is one of the most comprehensive sources of phishing intelligence, including URLs, email samples, and attack campaign data \cite{apwg2023trends}. Access to the APWG dataset is restricted to qualified researchers and industry partners, which limits broader research community utilization but enables more sensitive data sharing. The dataset represents real-world attack campaigns with high fidelity, including sophisticated spear phishing and business email compromise examples that are often absent from public datasets. However, access restrictions, privacy considerations, and concerns about inadvertently weaponizing training data by making it publicly available mean that much APWG research cannot be fully replicated by the broader academic community.
 
 \subsection{Modern Curated and Large-Scale Datasets}
 
-Recognition that existing datasets inadequately represented modern phishing diversity has motivated recent efforts to compile comprehensive, large-scale corpora:
+The EPVME Dataset, introduced by Patra et al. in 2024, aggregates over 600,000 malicious and benign samples and simulates novel attack vectors and contemporary vulnerabilities \cite{patra2024epvme}. This dataset emphasizes diversity, including traditional phishing, spear phishing, business email compromise, and malware delivery campaigns. Its scale enables the training of sophisticated deep learning models that require substantial data. However, questions remain about the dataset's real-world representativeness, as portions appear to be synthetically generated or significantly preprocessed, potentially introducing biases that limit generalization to operational environments.
 
+Similarly, the Champa Curated Collection, compiled by Champa et al. in 2025, brings together seven existing phishing datasets totaling over 200,000 instances, with standardized labels and formats to enable cross-dataset validation \cite{champa2025curated}. This meta-dataset approach improves generalization by exposing models to diverse attack patterns, allows for the evaluation of model robustness across different data sources, and helps identify dataset-specific biases by comparing model performance across constituent corpora. The work also emphasizes the importance of feature analysis and engineering for classical machine learning approaches, providing detailed characterization of lexical, structural, and metadata features across the combined corpus.
+
+In addition, Caripoti et al. developed the E-PhishGen Framework in 2025, which, rather than collecting existing emails, generates realistic phishing emails using large language models \cite{caripoti2025ephishgen}. This approach addresses several fundamental challenges, such as ethical concerns about distributing real malicious content, the difficulty of obtaining diverse attack examples at scale, and the need for datasets that reflect current events and evolving tactics. The framework enables controlled generation of phishing emails with specified characteristics, including target organization, attack vector, and emotional manipulation strategy, potentially enabling research into specific phishing subtypes that are rare in naturally occurring datasets.
 
 \subsection{Synthetic and Augmented Dataset Generation}
 
-The challenges of collecting, annotating, and distributing real phishing emails have motivated increasing interest in synthetic data generation:
+The challenges of collecting, annotating, and distributing real phishing emails have motivated increasing interest in synthetic data generation. A particularly notable contribution in this area is the Caripoti Synthetic Dataset, introduced in 2024 as part of a master's thesis at the University of Padua \cite{caripoti2024synthetic}. This dataset was generated using advanced large language models to create over 10,000 phishing and legitimate emails, with each sample carefully categorized by attack type. The methodology behind the Caripoti dataset emphasizes not only the generation of realistic and diverse phishing content, but also the inclusion of ground truth annotations and balanced coverage across different attack vectors. This approach enables researchers to systematically study the effectiveness of detection models on a wide range of phishing strategies, including those that may be underrepresented in real-world collections. The dataset also serves as a valuable resource for evaluating the robustness of machine learning models against novel and evolving phishing tactics, while addressing ethical and privacy concerns associated with distributing real malicious emails. 
 
-\subsubsection{Motivation for Synthetic Generation}
+In contrast, large-scale industry proprietary datasets, maintained by organizations such as Microsoft and Google since 2015, consist of millions of real email samples collected and updated continuously. These proprietary datasets offer unparalleled diversity and operational relevance, reflecting the latest attack trends and tactics observed in the wild. However, they are not publicly available due to privacy and publication restrictions, which limits their use to internal research and product development and poses a significant barrier to reproducibility and open academic benchmarking.
 
-Synthetic phishing email generation addresses several critical challenges that limit traditional dataset collection approaches \cite{wang2023synthetic}:
+\subsection{Synthetic Generation}
 
-
-\subsubsection{\ac{LLM}-Based Synthetic Generation}
-
-The availability of large language models like GPT-3/GPT-4, Claude, and open-source alternatives has enabled sophisticated synthetic phishing generation:
+The availability of large language models like GPT-3/GPT-4, Claude, and open-source alternatives has enabled sophisticated synthetic phishing generation.
 
 Caripoti (2024) created a dataset of over 10,000 phishing and legitimate email samples, categorized by attack type (malware delivery, credential harvesting, business email compromise), and demonstrated that models trained on synthetic data could achieve comparable performance to those trained on real data \cite{caripoti2024synthetic}. Importantly, mixing synthetic and real training data improved robustness, suggesting that synthetic examples help models generalize by exposing them to variation not present in limited real-world collections.
 
 Brown et al.'s work on few-shot learning with large language models demonstrated that modern \acp{LLM} can generate highly realistic text matching specified styles, tones, and content patterns with minimal examples \cite{brown2020language}. This capability enables generation of phishing emails that mimic specific organizational communication styles, individual writing patterns (for spear phishing), or cultural and linguistic contexts.
-
-\subsubsection{Challenges and Limitations of Synthetic Data}
-
 
 \subsection{Dataset Quality Dimensions and Evaluation}
 
@@ -330,7 +326,9 @@ Insufficient representation of adversarially-crafted emails specifically designe
 
 \subsection{Dataset Evolution Summary}
 
-Table \ref{tab:phishing_datasets} summarizes the evolution of datasets in phishing detection research, from historical legacy corpora through modern curated collections and synthetic generation approaches. This evolution reflects the field's maturation from opportunistic repurposing of existing email collections toward purposeful construction of comprehensive, representative, and well-annotated corpora designed specifically for phishing detection research.
+Table \ref{tab:phishing_datasets} summarizes the evolution of phishing datasets, highlighting key examples across different categories, their sizes, access methods, and notable features or limitations.
+
+However, a critical gap remains: despite growing recognition that emotional manipulation represents the fundamental mechanism through which phishing succeeds, and despite promising results from initial sentiment-aware detection approaches, no large-scale dataset currently provides fine-grained emotional annotations. This gap directly motivates the dataset construction work presented in subsequent chapters of this thesis.
 
 \begin{table}[ht]
 \centering
@@ -357,14 +355,9 @@ Industry Proprietary & 2015--present (Microsoft, Google, others) & Millions of r
 \end{tabular}
 \end{table}
 
-The trajectory from early legacy corpora to modern curated and synthetic datasets reflects several broader trends: recognition that phishing detection requires purpose-built datasets rather than repurposed general email corpora, increasing scale and diversity to support deep learning approaches, growing emphasis on synthetic generation to address ethical and practical collection challenges, and emerging awareness that rich annotations beyond binary labels (including emotional manipulation tactics) are essential for next-generation detection systems.
-
-However, a critical gap remains: despite growing recognition that emotional manipulation represents the fundamental mechanism through which phishing succeeds, and despite promising results from initial sentiment-aware detection approaches, no large-scale dataset currently provides fine-grained emotional annotations. This gap directly motivates the dataset construction work presented in subsequent chapters of this thesis.
-
 \section{Summary and Research Gaps}
 
 This chapter has provided a comprehensive examination of the state of the art in phishing detection, spanning technical foundations of email communication, the evolution and impact of phishing attacks, the progression of machine learning approaches from rule-based systems through transformer architectures, the emerging role of sentiment analysis, and the development of training datasets.
-
 
 Several key themes emerge from this review. First, phishing is fundamentally a form of psychological manipulation. While technical features such as URLs, headers, and attachments receive substantial research attention, phishing fundamentally succeeds through psychological manipulation rather than technical sophistication. Emotional triggers, including fear, urgency, greed, and authority, represent the core mechanism of successful attacks.
 
