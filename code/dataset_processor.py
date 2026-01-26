@@ -220,35 +220,62 @@ def balance_emotions_in_phishing(df_phishing, target_samples_per_emotion):
     """Balance emotions within phishing dataset"""
     print(f"\nBalancing emotions to {target_samples_per_emotion} samples each...")
     
-    emotion_counts = df_phishing['emotion'].value_counts().sort_index()
+    # Split multi-label emotions and count each unique emotion
+    from collections import Counter, defaultdict
+    
+    def get_emotion_set(series):
+        emotions = set()
+        for val in series.dropna():
+            emotions.update([e.strip() for e in str(val).split('#') if e.strip()])
+        return emotions
+
+    all_emotions = sorted(get_emotion_set(df_phishing['emotion']))
     print("Original emotion distribution:")
-    for emotion, count in emotion_counts.items():
-        print(f"  {emotion}: {count}")
-    
-    balanced_samples = []
-    
-    for emotion in sorted(df_phishing['emotion'].unique()):
-        emotion_samples = df_phishing[df_phishing['emotion'] == emotion]
-        
-        if len(emotion_samples) >= target_samples_per_emotion:
-            # Sample exactly target_samples_per_emotion
-            balanced_sample = emotion_samples.sample(n=target_samples_per_emotion, random_state=42)
-            balanced_samples.append(balanced_sample)
-            print(f"  {emotion}: sampled {target_samples_per_emotion} from {len(emotion_samples)} available")
+    # Count each emotion occurrence (even in multi-label rows)
+    emotion_counter = Counter()
+    for val in df_phishing['emotion'].dropna():
+        for e in str(val).split('#'):
+            e = e.strip()
+            if e:
+                emotion_counter[e] += 1
+    for emotion in all_emotions:
+        print(f"  {emotion}: {emotion_counter[emotion]}")
+
+    # For balancing, collect indices for each emotion
+    emotion_to_indices = defaultdict(set)
+    for idx, val in df_phishing['emotion'].dropna().items():
+        for e in str(val).split('#'):
+            e = e.strip()
+            if e:
+                emotion_to_indices[e].add(idx)
+
+    # For each emotion, sample up to target_samples_per_emotion unique rows
+    selected_indices = set()
+    for emotion in all_emotions:
+        indices = list(emotion_to_indices[emotion])
+        if len(indices) >= target_samples_per_emotion:
+            sampled = random.sample(indices, target_samples_per_emotion)
+            print(f"  {emotion}: sampled {target_samples_per_emotion} from {len(indices)} available")
         else:
-            # Not enough samples for this emotion
-            print(f"  WARNING: {emotion} has only {len(emotion_samples)} samples, need {target_samples_per_emotion}")
-            balanced_samples.append(emotion_samples)
-    
-    df_balanced = pd.concat(balanced_samples, ignore_index=True)
+            sampled = indices
+            print(f"  WARNING: {emotion} has only {len(indices)} samples, need {target_samples_per_emotion}")
+        selected_indices.update(sampled)
+
+    df_balanced = df_phishing.loc[list(selected_indices)].copy()
     df_balanced = shuffle(df_balanced, random_state=42).reset_index(drop=True)
-    
+
     print(f"\nBalanced phishing dataset: {len(df_balanced):,} entries")
     print("Final emotion distribution:")
-    final_counts = df_balanced['emotion'].value_counts().sort_index()
-    for emotion, count in final_counts.items():
-        print(f"  {emotion}: {count}")
-    
+    # Re-count in balanced set
+    final_counter = Counter()
+    for val in df_balanced['emotion'].dropna():
+        for e in str(val).split('#'):
+            e = e.strip()
+            if e:
+                final_counter[e] += 1
+    for emotion in all_emotions:
+        print(f"  {emotion}: {final_counter[emotion]}")
+
     return df_balanced
 
 # ============================================================================
@@ -264,31 +291,37 @@ class DatasetProcessor:
         
     def load_datasets(self, nonphishing_file='code/generated_10k_nonphishing_emails.csv', 
                      phishing_file='code/base_annotations.csv'):
-        """Load the raw datasets"""
+        """Load the raw datasets and keep only id, text, emotion columns"""
         print("=" * 80)
         print("DATASET PROCESSOR - Loading Datasets")
         print("=" * 80)
-        
+
+        keep_cols = ['id', 'text', 'emotion']
+
         # Load non-phishing dataset
         if os.path.exists(nonphishing_file):
             self.df_nonphishing = pd.read_csv(nonphishing_file)
+            # Keep only id, text, emotion columns if present
+            self.df_nonphishing = self.df_nonphishing[[col for col in keep_cols if col in self.df_nonphishing.columns]]
             print(f"✓ Loaded non-phishing: {nonphishing_file} ({len(self.df_nonphishing):,} entries)")
         else:
             print(f"✗ Non-phishing file not found: {nonphishing_file}")
             return False
-            
+
         # Load phishing dataset
         if os.path.exists(phishing_file):
             self.df_phishing = pd.read_csv(phishing_file)
+            # Keep only id, text, emotion columns if present
+            self.df_phishing = self.df_phishing[[col for col in keep_cols if col in self.df_phishing.columns]]
             print(f"✓ Loaded phishing: {phishing_file} ({len(self.df_phishing):,} entries)")
         else:
             print(f"✗ Phishing file not found: {phishing_file}")
             return False
-            
+
         print(f"\nDataset columns:")
         print(f"  Non-phishing: {list(self.df_nonphishing.columns)}")
         print(f"  Phishing: {list(self.df_phishing.columns)}")
-        
+
         return True
         
     def clean_text_artifacts(self):
@@ -300,24 +333,18 @@ class DatasetProcessor:
         # Clean non-phishing dataset
         if self.df_nonphishing is not None and 'text' in self.df_nonphishing.columns:
             print("Cleaning non-phishing text artifacts...")
-            original_sample = (self.df_nonphishing['text'].iloc[0] or '')
             cleaned_series = self.df_nonphishing['text'].apply(strip_trailing_artifacts)
             changed_count = (self.df_nonphishing['text'] != cleaned_series).sum()
             self.df_nonphishing['text'] = cleaned_series
             print(f"  ✓ Cleaned {changed_count} entries in non-phishing dataset")
-            cleaned_sample = self.df_nonphishing['text'].iloc[0][:100] + "..."
-            print(f"  Sample after clean: {cleaned_sample}")
 
         # Clean phishing dataset
         if self.df_phishing is not None and 'text' in self.df_phishing.columns:
             print("\nCleaning phishing text artifacts...")
-            original_sample = (self.df_phishing['text'].iloc[0] or '')
             cleaned_series = self.df_phishing['text'].apply(strip_trailing_artifacts)
             changed_count = (self.df_phishing['text'] != cleaned_series).sum()
             self.df_phishing['text'] = cleaned_series
             print(f"  ✓ Cleaned {changed_count} entries in phishing dataset")
-            cleaned_sample = self.df_phishing['text'].iloc[0][:100] + "..."
-            print(f"  Sample after clean: {cleaned_sample}")
 
         return True
 
@@ -330,27 +357,15 @@ class DatasetProcessor:
         # Process non-phishing dataset
         if 'text' in self.df_nonphishing.columns:
             print("Processing non-phishing placeholders...")
-            original_sample = self.df_nonphishing['text'].iloc[0][:100] + "..."
-            print(f"  Original sample: {original_sample}")
-            
             self.df_nonphishing['text'] = self.df_nonphishing['text'].apply(replace_placeholders)
-            
-            processed_sample = self.df_nonphishing['text'].iloc[0][:100] + "..."
-            print(f"  Processed sample: {processed_sample}")
             print(f"  ✓ Processed {len(self.df_nonphishing)} non-phishing texts")
-        
+
         # Process phishing dataset  
         if 'text' in self.df_phishing.columns:
             print("\nProcessing phishing placeholders...")
-            original_sample = self.df_phishing['text'].iloc[0][:100] + "..."
-            print(f"  Original sample: {original_sample}")
-            
             self.df_phishing['text'] = self.df_phishing['text'].apply(replace_placeholders)
-            
-            processed_sample = self.df_phishing['text'].iloc[0][:100] + "..."
-            print(f"  Processed sample: {processed_sample}")
             print(f"  ✓ Processed {len(self.df_phishing)} phishing texts")
-        
+
         return True
         
     def remove_unwanted_columns(self):
@@ -367,65 +382,134 @@ class DatasetProcessor:
         
         return True
         
-    def balance_and_combine_datasets(self):
-        """Balance emotions and combine datasets"""
+    def balance_and_combine_datasets(self, ratio=1.5):
+        """
+        Balance and combine datasets optimized for transformer model training.
+        
+        Args:
+            ratio (float): Ratio of non-phishing to phishing emails.
+                        1.0 = 50/50 split (balanced)
+                        1.5 = 60/40 split (recommended for transformers)
+                        2.0 = 67/33 split (more data, slightly imbalanced)
+        
+        Returns:
+            bool: True if successful
+        """
         print("\n" + "=" * 80)
         print("STEP 4: BALANCING AND COMBINING DATASETS")
         print("=" * 80)
-        
+
         print(f"Original dataset sizes:")
         print(f"  Non-phishing: {len(self.df_nonphishing):,} entries")
         print(f"  Phishing: {len(self.df_phishing):,} entries")
-        
-        # Shuffle both datasets
+        print(f"  Original ratio: {len(self.df_nonphishing)/len(self.df_phishing):.2f}:1")
+
+        # Shuffle both datasets for random sampling
         self.df_nonphishing = shuffle(self.df_nonphishing, random_state=42).reset_index(drop=True)
         self.df_phishing = shuffle(self.df_phishing, random_state=42).reset_index(drop=True)
+
+        # Calculate target non-phishing count based on ratio
+        phishing_count = len(self.df_phishing)
+        nonphish_target = int(phishing_count * ratio)
         
-        # Determine balancing strategy
-        min_dataset_size = min(len(self.df_nonphishing), len(self.df_phishing))
-        num_emotions = self.df_phishing['emotion'].nunique()
-        samples_per_emotion = min_dataset_size // num_emotions
+        print(f"\nTarget ratio: {ratio}:1 (non-phishing:phishing)")
+        print(f"Target non-phishing samples: {nonphish_target:,}")
         
-        print(f"\nBalancing strategy:")
-        print(f"  Smaller dataset size: {min_dataset_size:,}")
-        print(f"  Number of unique emotions: {num_emotions}")
-        print(f"  Samples per emotion: {samples_per_emotion}")
-        
-        # Balance emotions within phishing dataset
-        self.df_phishing_balanced = balance_emotions_in_phishing(self.df_phishing, samples_per_emotion)
-        
-        # Balance non-phishing to match phishing size
-        target_size = len(self.df_phishing_balanced)
-        print(f"\nBalancing non-phishing to {target_size:,} entries")
-        
-        if len(self.df_nonphishing) > target_size:
-            self.df_nonphishing = self.df_nonphishing.sample(n=target_size, random_state=42).reset_index(drop=True)
-            print(f"  ✓ Sampled {target_size:,} from original non-phishing entries")
-        elif len(self.df_nonphishing) < target_size:
-            print(f"  WARNING: Non-phishing has only {len(self.df_nonphishing):,} entries, need {target_size:,}")
+        # Sample non-phishing emails
+        if len(self.df_nonphishing) >= nonphish_target:
+            df_nonphish_balanced = self.df_nonphishing.sample(
+                n=nonphish_target, 
+                random_state=42
+            ).reset_index(drop=True)
+            print(f"✓ Sampled {nonphish_target:,} from {len(self.df_nonphishing):,} non-phishing emails")
         else:
-            print("  ✓ Non-phishing dataset already matches target size")
+            df_nonphish_balanced = self.df_nonphishing.copy()
+            print(f"⚠ WARNING: Only {len(self.df_nonphishing):,} non-phishing emails available")
+            print(f"           (needed {nonphish_target:,} for {ratio}:1 ratio)")
         
         # Add labels
         print(f"\nAdding dataset labels...")
-        self.df_nonphishing['label'] = 'non-phishing'
-        self.df_phishing_balanced['label'] = 'phishing'
+        df_nonphish_balanced['label'] = 'non-phishing'
+        self.df_phishing['label'] = 'phishing'
         
         # Combine datasets
-        self.df_combined = pd.concat([self.df_nonphishing, self.df_phishing_balanced], ignore_index=True)
+        print(f"Combining datasets...")
+        self.df_combined = pd.concat(
+            [df_nonphish_balanced, self.df_phishing], 
+            ignore_index=True
+        )
+        
+        # Final shuffle to mix phishing and non-phishing
         self.df_combined = shuffle(self.df_combined, random_state=42).reset_index(drop=True)
         
-        print(f"\nFinal combined dataset:")
-        print(f"  Total entries: {len(self.df_combined):,}")
-        print(f"  Label distribution: {self.df_combined['label'].value_counts().to_dict()}")
+        # Calculate final statistics
+        final_phishing = len(self.df_combined[self.df_combined['label'] == 'phishing'])
+        final_nonphishing = len(self.df_combined[self.df_combined['label'] == 'non-phishing'])
+        final_ratio = final_nonphishing / final_phishing if final_phishing > 0 else 0
+        phishing_percentage = (final_phishing / len(self.df_combined)) * 100
+        nonphishing_percentage = (final_nonphishing / len(self.df_combined)) * 100
         
-        # Show final emotion distribution for phishing emails
-        phishing_subset = self.df_combined[self.df_combined['label'] == 'phishing']
-        if 'emotion' in phishing_subset.columns:
-            print(f"\n  Final emotion distribution in phishing emails:")
-            emotion_dist = phishing_subset['emotion'].value_counts().sort_index()
-            for emotion, count in emotion_dist.items():
-                print(f"    {emotion}: {count}")
+        print(f"\n" + "=" * 80)
+        print("FINAL COMBINED DATASET STATISTICS")
+        print("=" * 80)
+        print(f"Total entries: {len(self.df_combined):,}")
+        print(f"\nLabel Distribution:")
+        print(f"  Non-phishing: {final_nonphishing:,} ({nonphishing_percentage:.1f}%)")
+        print(f"  Phishing:     {final_phishing:,} ({phishing_percentage:.1f}%)")
+        print(f"  Final ratio:  {final_ratio:.2f}:1 (non-phishing:phishing)")
+        
+        # Show emotion distribution if available
+        if 'emotion' in self.df_combined.columns:
+            print(f"\nEmotion Distribution in Phishing Emails:")
+            phishing_subset = self.df_combined[self.df_combined['label'] == 'phishing']
+            
+            # Count emotions (handling multi-label with # separator)
+            from collections import Counter
+            emotion_counter = Counter()
+            for val in phishing_subset['emotion'].dropna():
+                for e in str(val).split('#'):
+                    e = e.strip()
+                    if e and e.lower() != 'unsure':
+                        emotion_counter[e] += 1
+            
+            for emotion, count in sorted(emotion_counter.items()):
+                percentage = (count / len(phishing_subset)) * 100
+                print(f"  {emotion}: {count} ({percentage:.1f}%)")
+            
+            # Show non-phishing emotion distribution
+            print(f"\nEmotion Distribution in Non-Phishing Emails:")
+            nonphishing_subset = self.df_combined[self.df_combined['label'] == 'non-phishing']
+            
+            emotion_counter_nonphish = Counter()
+            for val in nonphishing_subset['emotion'].dropna():
+                for e in str(val).split('#'):
+                    e = e.strip()
+                    if e and e.lower() != 'unsure':
+                        emotion_counter_nonphish[e] += 1
+            
+            for emotion, count in sorted(emotion_counter_nonphish.items()):
+                percentage = (count / len(nonphishing_subset)) * 100
+                print(f"  {emotion}: {count} ({percentage:.1f}%)")
+        
+        # Data quality checks
+        print(f"\n" + "=" * 80)
+        print("DATA QUALITY CHECKS")
+        print("=" * 80)
+        
+        # Check for missing values
+        missing_text = self.df_combined['text'].isna().sum()
+        missing_label = self.df_combined['label'].isna().sum()
+        missing_emotion = self.df_combined['emotion'].isna().sum() if 'emotion' in self.df_combined.columns else 0
+        
+        print(f"Missing values:")
+        print(f"  Text:    {missing_text} ({(missing_text/len(self.df_combined)*100):.2f}%)")
+        print(f"  Label:   {missing_label} ({(missing_label/len(self.df_combined)*100):.2f}%)")
+        if 'emotion' in self.df_combined.columns:
+            print(f"  Emotion: {missing_emotion} ({(missing_emotion/len(self.df_combined)*100):.2f}%)")
+            # print id of emails with missing emotion
+            missing_emotion_ids = self.df_combined[self.df_combined['emotion'].isna()]['id'].tolist()
+            if missing_emotion_ids:
+                print(f"    IDs with missing emotion: {missing_emotion_ids}")
         
         return True
         
@@ -454,9 +538,12 @@ class DatasetProcessor:
         nonphishing_count = len(self.df_combined[self.df_combined['label'] == 'non-phishing'])
         
         if 'emotion' in self.df_combined.columns:
-            emotions_count = len(self.df_combined[self.df_combined['label'] == 'phishing']['emotion'].unique())
-            samples_per_emotion = phishing_count // emotions_count
-            
+            # Multi-label: count unique emotions
+            phishing_emotions = set()
+            for val in self.df_combined[self.df_combined['label'] == 'phishing']['emotion'].dropna():
+                phishing_emotions.update([e.strip() for e in str(val).split('#') if e.strip()])
+            emotions_count = len(phishing_emotions)
+            samples_per_emotion = phishing_count // emotions_count if emotions_count > 0 else 0
             print(f"  Phishing emails: {phishing_count:,} ({emotions_count} emotions × ~{samples_per_emotion})")
         else:
             print(f"  Phishing emails: {phishing_count:,}")
@@ -483,7 +570,6 @@ class DatasetProcessor:
         ]
         
         for step_name, step_func in steps:
-            print(f"\n{step_name}...")
             if not step_func():
                 print(f"✗ Pipeline failed at: {step_name}")
                 return False
@@ -492,7 +578,6 @@ class DatasetProcessor:
         print("✓ DATASET PROCESSING PIPELINE COMPLETED SUCCESSFULLY!")
         print("=" * 80)
         print(f"Final dataset available at: {output_file}")
-        print(f"Dataset ready for machine learning pipeline!")
         
         return True
 
@@ -507,7 +592,7 @@ def main():
     # Run the complete pipeline
     success = processor.run_complete_pipeline(
         nonphishing_file='code/generated_10k_nonphishing_emails.csv',
-        phishing_file='code/base_annotations.csv',
+        phishing_file='code/current_dataset.csv',
         output_file='code/combined_emails_dataset.csv'
     )
     
