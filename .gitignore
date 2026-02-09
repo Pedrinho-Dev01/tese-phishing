@@ -8,3 +8,4 @@ latex/test.synctex.gz
 user_making/create_doccano_users.py
 __pycache__/
 user_making/send_email.py
+ml_code/models
