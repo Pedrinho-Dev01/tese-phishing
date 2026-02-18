@@ -9,3 +9,6 @@ user_making/create_doccano_users.py
 __pycache__/
 user_making/send_email.py
 ml_code/models
+results_deberta
+results_electra
+results_roberta

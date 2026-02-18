@@ -12,10 +12,15 @@ from sklearn.metrics import (
     precision_recall_fscore_support, 
     accuracy_score
 ) 
+from sklearn.utils.class_weight import compute_class_weight
 from datasets import Dataset
 import pandas as pd
 import numpy as np
 from scipy.special import softmax
+import torch
+
+# Enable memory optimizations
+torch.cuda.empty_cache()
 
 # 1. Load dataset
 df = pd.read_csv('code/combined_emails_dataset.csv')
@@ -23,18 +28,39 @@ df = pd.read_csv('code/combined_emails_dataset.csv')
 # 2. Prepare for transformers
 df['labels'] = df['label'].map({'non-phishing': 0, 'phishing': 1})
 
+# Check class distribution
+print("\n" + "="*60)
+print("CLASS DISTRIBUTION")
+print("="*60)
+print(df['labels'].value_counts())
+print(f"Class 0 (non-phishing): {(df['labels']==0).sum()} ({(df['labels']==0).mean()*100:.1f}%)")
+print(f"Class 1 (phishing): {(df['labels']==1).sum()} ({(df['labels']==1).mean()*100:.1f}%)")
+print("="*60 + "\n")
+
 # 3. Split train/val/test
 from sklearn.model_selection import train_test_split
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=df['labels'], random_state=42)
 train_df, val_df = train_test_split(train_df, test_size=0.1, stratify=train_df['labels'], random_state=42)
 print(f"Train: {len(train_df):,} | Val: {len(val_df):,} | Test: {len(test_df):,}")
 
-# 4. Load DeBERTa-v3
-tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-large")
+# 4. Compute class weights for imbalanced dataset
+class_weights = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(train_df['labels']),
+    y=train_df['labels']
+)
+class_weights = torch.tensor(class_weights, dtype=torch.float32)
+print(f"\nClass weights: {class_weights}")
+
+# 5. Load DeBERTa-v3-base
+tokenizer = AutoTokenizer.from_pretrained("microsoft/deberta-v3-base")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "microsoft/deberta-v3-large",
+    "microsoft/deberta-v3-base",
     num_labels=2
 )
+
+# Enable gradient checkpointing
+model.gradient_checkpointing_enable()
 
 data_collator = DataCollatorWithPadding(tokenizer)
 
@@ -56,12 +82,13 @@ test_dataset = test_dataset.map(tokenize_function, batched=True)
 
 def compute_metrics(pred):
     labels = pred.label_ids
-    probs = softmax(pred.predictions, axis=1)[:, 1]
-    preds = (probs >= 0.35).astype(int)
+    preds = pred.predictions.argmax(-1)
+    
     precision, recall, f1, _ = precision_recall_fscore_support(
-        labels, preds, average='binary'
+        labels, preds, average='binary', zero_division=0
     )
     acc = accuracy_score(labels, preds)
+    
     return {
         'accuracy': acc,
         'f1': f1,
@@ -69,65 +96,140 @@ def compute_metrics(pred):
         'recall': recall
     }
 
-# 5. Training arguments
+# Custom Trainer with class weights
+class WeightedTrainer(Trainer):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+        labels = inputs.pop("labels")
+        outputs = model(**inputs)
+        logits = outputs.logits
+        
+        # Apply class weights
+        loss_fct = torch.nn.CrossEntropyLoss(weight=class_weights.to(logits.device))
+        loss = loss_fct(logits, labels)
+        
+        return (loss, outputs) if return_outputs else loss
+
+# 6. Training arguments
 training_args = TrainingArguments(
     output_dir='./results_deberta',
     eval_strategy="epoch",
     save_strategy="epoch",
     learning_rate=1e-5,
-    per_device_train_batch_size=8, 
-    per_device_eval_batch_size=16,
-    gradient_accumulation_steps=2,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=32,
+    gradient_accumulation_steps=1,
+    max_grad_norm=1.0,
     greater_is_better=True,
-    num_train_epochs=8,
+    num_train_epochs=10,
     weight_decay=0.01,
-    warmup_ratio=0.1,  # 10% warmup
+    warmup_ratio=0.15,
     lr_scheduler_type="cosine",
-    label_smoothing_factor=0.1,
+    label_smoothing_factor=0.05, 
     load_best_model_at_end=True,
     metric_for_best_model="f1",
     logging_dir='./logs_deberta',
-    logging_steps=10,
-    fp16=True,
+    logging_steps=50,  # Log less frequently
+    logging_first_step=True,
+    bf16=True,
     use_cpu=False,
+    gradient_checkpointing=True,
+    optim="adamw_torch_fused",
+    dataloader_pin_memory=False,
+    save_total_limit=2,
+    report_to="none",  # Disable wandb/tensorboard
 )
 
-# 6. Create trainer
-trainer = Trainer(
+# 7. Create trainer with class weights
+trainer = WeightedTrainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
     eval_dataset=val_dataset,
     compute_metrics=compute_metrics,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],  # Increased patience
     data_collator=data_collator
 )
 
-# 7. Train and evaluate
-print("\nStarting DeBERTa-v3 training...")
+# 8. Train and evaluate
+print("\n" + "="*60)
+print("Starting DeBERTa-v3-base training")
+print("="*60)
 trainer.train()
 
-# 8. Test set evaluation
-print("\nEvaluating on test set...")
-test_results = trainer.evaluate(test_dataset)
+# 9. Test set evaluation with CUSTOM THRESHOLD
+print("\n" + "="*60)
+print("Evaluating on test set...")
+print("="*60)
+
+# Get predictions
 preds = trainer.predict(test_dataset)
 y_true = preds.label_ids
-y_pred = preds.predictions.argmax(-1)
 
-print(confusion_matrix(y_true, y_pred))
-print(classification_report(y_true, y_pred))
+# Standard threshold (0.5)
+y_pred_standard = preds.predictions.argmax(-1)
+
+# Custom threshold (0.35) for recall
+probs = softmax(preds.predictions, axis=1)[:, 1]
+y_pred_custom = (probs >= 0.35).astype(int)
+
+print("\n--- RESULTS WITH STANDARD THRESHOLD (0.5) ---")
+print(confusion_matrix(y_true, y_pred_standard))
+print(classification_report(y_true, y_pred_standard, zero_division=0))
+
+print("\n--- RESULTS WITH CUSTOM THRESHOLD (0.35) ---")
+print(confusion_matrix(y_true, y_pred_custom))
+print(classification_report(y_true, y_pred_custom, zero_division=0))
+
+# Calculate metrics for both thresholds
+precision_std, recall_std, f1_std, _ = precision_recall_fscore_support(
+    y_true, y_pred_standard, average='binary', zero_division=0
+)
+acc_std = accuracy_score(y_true, y_pred_standard)
+
+precision_custom, recall_custom, f1_custom, _ = precision_recall_fscore_support(
+    y_true, y_pred_custom, average='binary', zero_division=0
+)
+acc_custom = accuracy_score(y_true, y_pred_custom)
 
 print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - DeBERTa-v3-Large")
+print("FINAL TEST RESULTS - DeBERTa-v3-Base")
 print(f"{'='*60}")
-print(f"  Accuracy:  {test_results['eval_accuracy']:.4f}")
-print(f"  F1 Score:  {test_results['eval_f1']:.4f}")
-print(f"  Precision: {test_results['eval_precision']:.4f}")
-print(f"  Recall:    {test_results['eval_recall']:.4f}")
+print("\nStandard Threshold (0.5):")
+print(f"  Accuracy:  {acc_std:.4f}")
+print(f"  F1 Score:  {f1_std:.4f}")
+print(f"  Precision: {precision_std:.4f}")
+print(f"  Recall:    {recall_std:.4f}")
+
+print("\nCustom Threshold (0.35):")
+print(f"  Accuracy:  {acc_custom:.4f}")
+print(f"  F1 Score:  {f1_custom:.4f}")
+print(f"  Precision: {precision_custom:.4f}")
+print(f"  Recall:    {recall_custom:.4f}")
 print(f"{'='*60}")
 
-# 9. Save model
+# 10. Save model
 print("\nSaving model...")
 trainer.save_model('./ml_code/models/deberta_final')
 tokenizer.save_pretrained('./ml_code/models/deberta_final')
 print("✓ Model saved to './ml_code/models/deberta_final'")
+
+# 11. Save threshold information
+threshold_info = {
+    'recommended_threshold': 0.35,
+    'standard_metrics': {
+        'accuracy': acc_std,
+        'f1': f1_std,
+        'precision': precision_std,
+        'recall': recall_std
+    },
+    'custom_metrics': {
+        'accuracy': acc_custom,
+        'f1': f1_custom,
+        'precision': precision_custom,
+        'recall': recall_custom
+    }
+}
+
+import json
+with open('./ml_code/models/deberta_final/threshold_config.json', 'w') as f:
+    json.dump(threshold_info, f, indent=2)
