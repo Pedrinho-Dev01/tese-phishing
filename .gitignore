@@ -3,7 +3,6 @@ latex/test.fdb_latexmk
 latex/test.fls
 latex/test.log
 latex/test.synctex.gz
-*.csv
 *.json
 user_making/create_doccano_users.py
 __pycache__/
