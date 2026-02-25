@@ -50,10 +50,10 @@ class_weights = compute_class_weight(
 class_weights = torch.tensor(class_weights, dtype=torch.float32)
 print(f"\nClass weights: {class_weights}")
 
-# 5. Load ELECTRA-base
-tokenizer = AutoTokenizer.from_pretrained("google/electra-base-discriminator")
+# 5. Load ELECTRA-large
+tokenizer = AutoTokenizer.from_pretrained("google/electra-large-discriminator")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "google/electra-base-discriminator",
+    "google/electra-large-discriminator",
     num_labels=2
 )
 
@@ -147,7 +147,7 @@ trainer = WeightedTrainer(
 
 # 8. Train
 print("\n" + "="*60)
-print("Starting ELECTRA-base training")
+print("Starting ELECTRA-large training")
 print("="*60)
 trainer.train()
 
@@ -182,7 +182,7 @@ precision_custom, recall_custom, f1_custom, _ = precision_recall_fscore_support(
 acc_custom = accuracy_score(y_true, y_pred_custom)
 
 print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - ELECTRA-Base")
+print("FINAL TEST RESULTS - ELECTRA-Large")
 print(f"{'='*60}")
 print("\nStandard Threshold (0.5):")
 print(f"  Accuracy:  {acc_std:.4f}")
@@ -196,6 +196,45 @@ print(f"  F1 Score:  {f1_custom:.4f}")
 print(f"  Precision: {precision_custom:.4f}")
 print(f"  Recall:    {recall_custom:.4f}")
 print(f"{'='*60}")
+
+# Display misclassified examples (using custom threshold) ##################################################
+print("\n" + "="*60)
+print("MISCLASSIFIED EXAMPLES (Custom Threshold 0.35)")
+print("="*60)
+
+# Get original texts from test_df
+test_texts = test_df['text'].values
+test_labels_original = test_df['label'].values
+
+# Find misclassified indices
+false_negatives_idx = np.where((y_true == 1) & (y_pred_custom == 0))[0]
+false_positives_idx = np.where((y_true == 0) & (y_pred_custom == 1))[0]
+
+print(f"\nTotal False Negatives (Phishing classified as Non-Phishing): {len(false_negatives_idx)}")
+print(f"Total False Positives (Non-Phishing classified as Phishing): {len(false_positives_idx)}")
+
+# Show up to 5 false negatives (missed phishing)
+print("\n" + "-"*60)
+print("FALSE NEGATIVES - Phishing emails incorrectly classified as Non-Phishing:")
+print("-"*60)
+for i, idx in enumerate(false_negatives_idx[:5]):
+    print(f"\n[Example {i+1}]")
+    print(f"True Label: Phishing | Predicted: Non-Phishing | Probability: {probs[idx]:.3f}")
+    print(f"Text: {test_texts[idx][:500]}...")  # Show first 500 chars
+    print("-"*60)
+
+# Show up to 5 false positives (wrongly flagged as phishing)
+print("\n" + "-"*60)
+print("FALSE POSITIVES - Non-Phishing emails incorrectly classified as Phishing:")
+print("-"*60)
+for i, idx in enumerate(false_positives_idx[:5]):
+    print(f"\n[Example {i+1}]")
+    print(f"True Label: Non-Phishing | Predicted: Phishing | Probability: {probs[idx]:.3f}")
+    print(f"Text: {test_texts[idx][:500]}...")  # Show first 500 chars
+    print("-"*60)
+
+print("\n" + "="*60 + "\n")
+#######################################################################################################
 
 # 10. Save model
 print("\nSaving model...")
