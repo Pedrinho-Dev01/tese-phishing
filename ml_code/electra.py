@@ -50,10 +50,10 @@ class_weights = compute_class_weight(
 class_weights = torch.tensor(class_weights, dtype=torch.float32)
 print(f"\nClass weights: {class_weights}")
 
-# 5. Load ELECTRA-large
-tokenizer = AutoTokenizer.from_pretrained("google/electra-large-discriminator")
+# 5. Load ELECTRA-base
+tokenizer = AutoTokenizer.from_pretrained("google/electra-base-discriminator")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "google/electra-large-discriminator",
+    "google/electra-base-discriminator",
     num_labels=2
 )
 
@@ -147,7 +147,7 @@ trainer = WeightedTrainer(
 
 # 8. Train
 print("\n" + "="*60)
-print("Starting ELECTRA-large training")
+print("Starting ELECTRA-base training")
 print("="*60)
 trainer.train()
 
@@ -182,7 +182,7 @@ precision_custom, recall_custom, f1_custom, _ = precision_recall_fscore_support(
 acc_custom = accuracy_score(y_true, y_pred_custom)
 
 print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - ELECTRA-Large")
+print("FINAL TEST RESULTS - ELECTRA-base")
 print(f"{'='*60}")
 print("\nStandard Threshold (0.5):")
 print(f"  Accuracy:  {acc_std:.4f}")

@@ -288,6 +288,45 @@ class DatasetProcessor:
         self.df_nonphishing = None
         self.df_phishing = None
         self.df_combined = None
+
+    def _normalize_input_columns(self, df, dataset_name):
+        """Normalize raw input to id, text, emotion columns.
+
+        Accepts either `emotion` or `label` as the emotion source column and
+        preserves multi-label values (e.g., "fear#confusion") as-is.
+        """
+        col_map = {str(col).strip().lower(): col for col in df.columns}
+
+        id_col = col_map.get('id')
+        text_col = col_map.get('text')
+        emotion_col = col_map.get('emotion') or col_map.get('label')
+
+        missing_required = []
+        if id_col is None:
+            missing_required.append('id')
+        if text_col is None:
+            missing_required.append('text')
+
+        if missing_required:
+            raise ValueError(
+                f"{dataset_name}: Missing required columns: {missing_required}. "
+                f"Available columns: {list(df.columns)}"
+            )
+
+        normalized = pd.DataFrame({
+            'id': df[id_col],
+            'text': df[text_col],
+        })
+
+        if emotion_col is not None:
+            normalized['emotion'] = df[emotion_col]
+            normalized['emotion'] = normalized['emotion'].replace(r'^\s*$', np.nan, regex=True)
+            print(f"  {dataset_name}: using '{emotion_col}' as emotion column")
+        else:
+            normalized['emotion'] = np.nan
+            print(f"  ⚠ {dataset_name}: no emotion/label column found; emotion set to NaN")
+
+        return normalized
         
     def load_datasets(self, nonphishing_file='code/generated_10k_nonphishing_emails.csv', 
                      phishing_file='code/base_annotations.csv'):
@@ -296,13 +335,10 @@ class DatasetProcessor:
         print("DATASET PROCESSOR - Loading Datasets")
         print("=" * 80)
 
-        keep_cols = ['id', 'text', 'emotion']
-
         # Load non-phishing dataset
         if os.path.exists(nonphishing_file):
-            self.df_nonphishing = pd.read_csv(nonphishing_file)
-            # Keep only id, text, emotion columns if present
-            self.df_nonphishing = self.df_nonphishing[[col for col in keep_cols if col in self.df_nonphishing.columns]]
+            raw_nonphish = pd.read_csv(nonphishing_file)
+            self.df_nonphishing = self._normalize_input_columns(raw_nonphish, "Non-phishing")
             print(f"✓ Loaded non-phishing: {nonphishing_file} ({len(self.df_nonphishing):,} entries)")
         else:
             print(f"✗ Non-phishing file not found: {nonphishing_file}")
@@ -310,9 +346,8 @@ class DatasetProcessor:
 
         # Load phishing dataset
         if os.path.exists(phishing_file):
-            self.df_phishing = pd.read_csv(phishing_file)
-            # Keep only id, text, emotion columns if present
-            self.df_phishing = self.df_phishing[[col for col in keep_cols if col in self.df_phishing.columns]]
+            raw_phish = pd.read_csv(phishing_file)
+            self.df_phishing = self._normalize_input_columns(raw_phish, "Phishing")
             print(f"✓ Loaded phishing: {phishing_file} ({len(self.df_phishing):,} entries)")
         else:
             print(f"✗ Phishing file not found: {phishing_file}")
