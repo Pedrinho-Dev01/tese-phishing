@@ -1,1 +1,127 @@
 \chapter{Emotion Detection Model}
+
+\section{Model Selection}
+To model the emotional content present in phishing emails, we selected three transformer-based architectures: \acs{RoBERTa}-base \cite{liu2019roberta}, \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}, and \acs{DeBERTa}-v3-base \cite{he2021debertadecodingenhancedbertdisentangled}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
+
+Unlike the binary phishing detection task in Chapter~4, emotion detection is formulated here as a \textbf{multi-label classification} problem: a single phishing email may simultaneously express multiple emotions (e.g., fear and urgency). This formulation better reflects realistic phishing language, where overlapping emotional manipulation strategies are common.
+
+\section{Dataset Preparation}
+The starting point was the combined email dataset used throughout this thesis. For emotion modeling, only emails labeled as \texttt{phishing} were retained, since the objective is to characterize emotional patterns specifically within malicious messages.
+
+Rows without emotion annotation were removed, and the remaining emotion labels were parsed from a delimiter-based format (e.g., \texttt{curiosity\#excitement\#fear}) into sets of class tags. A global emotion vocabulary was then built from the training corpus, and each email was encoded as a multi-hot vector, where each dimension indicates the presence (1) or absence (0) of a given emotion.
+
+To preserve label distribution during splitting, a stratification proxy was used: for each sample, the index of its dominant label (\texttt{argmax} over the multi-hot vector) served as the stratification target. Data was split into test (20\%) and train (80\%), followed by a validation split (10\% of train), resulting in approximately 72\%/8\%/20\% train/validation/test partitions, with a fixed random seed for reproducibility.
+
+\section{Model Implementation}
+Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenization, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
+
+For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base, \acs{DeBERTa}-v3-base), the following pipeline was applied:
+
+\begin{itemize}
+	\item \textbf{Tokenization:} Emails were tokenized with each model's pretrained tokenizer, padded to fixed length, and truncated at 512 tokens.
+
+	\item \textbf{Multi-label Objective:} The classifier head was configured with \texttt{problem\_type=multi\_label\_classification}. During training, logits were optimized using \texttt{BCEWithLogitsLoss}, and probabilities were obtained at evaluation time using the sigmoid function.
+
+	\item \textbf{Class Imbalance Handling:} Because some emotions are less frequent, per-class positive weights were computed from the training split as the negative-to-positive ratio. To avoid excessive penalization of rare classes, a square-root dampening strategy was used and values were clipped to a maximum of 5.0. These \texttt{pos\_weight} values were injected into \texttt{BCEWithLogitsLoss} through a custom weighted trainer.
+
+	\item \textbf{Model Fine-tuning:} All models were fine-tuned for up to 10 epochs using \acs{AdamW} \cite{loshchilov2019decoupled}, cosine learning-rate scheduling, learning rate $2 \times 10^{-5}$, warmup ratio 0.15, and weight decay 0.01. Early stopping (patience = 3) monitored validation macro-F1, with best-checkpoint restoration enabled.
+
+	\item \textbf{Computational Optimizations:} BF16 mixed precision \cite{micikevicius2018mixed}, gradient checkpointing, and gradient clipping (max norm 1.0) were used to improve training efficiency and stability on \acs{GPU} hardware.
+
+	\item \textbf{Threshold Tuning:} Since multi-label outputs depend strongly on decision thresholds, threshold optimization was performed on the validation set after training. Two strategies were evaluated: (i) one global threshold shared by all classes, and (ii) per-class thresholds. Candidate thresholds in the interval [0.20, 0.80] with 0.05 steps were tested to maximize macro-F1.
+
+	\item \textbf{Prediction Fallback:} To avoid empty-label predictions, a fallback rule forced at least one label per sample by selecting the maximum-probability class whenever no threshold was exceeded.
+
+	\item \textbf{Evaluation:} Performance was reported using exact-match accuracy, macro precision, macro recall, and macro F1, along with per-class classification reports on the held-out test set.
+\end{itemize}
+
+\section{Evaluation and Results}
+
+After training, each model was evaluated on the test set using both thresholding strategies selected from validation: global threshold and per-class thresholds. This comparison assesses whether class-specific calibration improves the balance between precision and recall across uneven emotion distributions.
+
+\subsection{RoBERTa-base Results}
+Table~\ref{tab:roberta_emotion_results} summarizes the test performance of the \acs{RoBERTa}-base model under both thresholding strategies.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Test set results for \acs{RoBERTa}-base using global and per-class thresholds.}
+\label{tab:roberta_emotion_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
+\hline
+Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
+Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+The per-class strategy is expected to better account for class-specific score distributions, particularly for underrepresented emotions. Final numerical values should be inserted from the exported \texttt{model\_config.json} generated after training.
+
+\subsection{ELECTRA-base Results}
+Table~\ref{tab:electra_emotion_results} reports the corresponding results for \acs{ELECTRA}-base.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Test set results for \acs{ELECTRA}-base using global and per-class thresholds.}
+\label{tab:electra_emotion_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
+\hline
+Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
+Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+As with \acs{RoBERTa}, the global-versus-per-class comparison provides insight into calibration sensitivity and recall gains on minority emotion labels.
+
+\subsection{DeBERTa-v3-base Results}
+Table~\ref{tab:deberta_emotion_results} presents the test results for \acs{DeBERTa}-v3-base.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Test set results for \acs{DeBERTa}-v3-base using global and per-class thresholds.}
+\label{tab:deberta_emotion_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
+\hline
+Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
+Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+}
+\end{table}
+
+The DeBERTa variant is included to evaluate whether disentangled attention yields additional gains in multi-label emotion recognition for phishing text.
+
+\subsection{Comparative Analysis}
+Table~\ref{tab:emotion_model_comparison} provides a cross-model summary using the best threshold strategy for each architecture.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Cross-model comparison on the test set (best threshold strategy per model).}
+\label{tab:emotion_model_comparison}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\hline
+\textbf{Model} & \textbf{Best Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
+\hline
+\acs{RoBERTa}-base   & TODO & TODO & TODO & TODO & TODO \\
+\acs{ELECTRA}-base   & TODO & TODO & TODO & TODO & TODO \\
+\acs{DeBERTa}-v3-base & TODO & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+}
+\end{table}

@@ -14,7 +14,7 @@ from sklearn.metrics import (
 from datasets import Dataset
 import pandas as pd
 import numpy as np
-from scipy.special import expit as sigmoid  # sigmoid instead of softmax for multi-label
+from scipy.special import expit as sigmoid
 import torch
 import json
 
@@ -55,7 +55,7 @@ avg_labels = label_matrix.sum(axis=1).mean()
 print(f"Avg labels per sample: {avg_labels:.2f}")
 print("="*60 + "\n")
 
-# 3. Split train/val/test (stratify on most common label per sample as proxy)
+# 3. Split train/val/test
 from sklearn.model_selection import train_test_split
 primary_label = label_matrix.argmax(axis=1)
 train_df, test_df = train_test_split(df, test_size=0.2, stratify=primary_label, random_state=42)
@@ -63,12 +63,19 @@ train_primary = np.stack(train_df['labels'].values).argmax(axis=1)
 train_df, val_df = train_test_split(train_df, test_size=0.1, stratify=train_primary, random_state=42)
 print(f"Train: {len(train_df):,} | Val: {len(val_df):,} | Test: {len(test_df):,}")
 
-# 4. Compute per-class pos_weight for BCEWithLogitsLoss
+# 4. Compute pos_weight with sqrt dampening + max clamp
+#    Raw ratio (neg/pos) pushes recall too high at the cost of precision.
+#    sqrt() dampens the effect; clamp(max=5) prevents extreme weights on very rare classes.
 train_label_matrix = np.stack(train_df['labels'].values)
 pos_counts = train_label_matrix.sum(axis=0)
 neg_counts = len(train_df) - pos_counts
-pos_weight = torch.tensor(neg_counts / np.clip(pos_counts, 1, None), dtype=torch.float32)
-print(f"\nPos weights: {pos_weight}")
+
+raw_weights = neg_counts / np.clip(pos_counts, 1, None)
+dampened_weights = np.sqrt(raw_weights)
+pos_weight = torch.tensor(dampened_weights, dtype=torch.float32).clamp(max=5.0)
+
+print(f"\nRaw pos_weight:      {raw_weights.round(2)}")
+print(f"Dampened pos_weight: {pos_weight.numpy().round(2)}")
 
 # 5. Load ELECTRA-base
 tokenizer = AutoTokenizer.from_pretrained("google/electra-base-discriminator")
@@ -103,6 +110,7 @@ train_dataset = to_dataset(train_df)
 val_dataset   = to_dataset(val_df)
 test_dataset  = to_dataset(test_df)
 
+# Threshold will be tuned on val set after training — use 0.5 during training
 THRESHOLD = 0.5
 
 def compute_metrics(pred):
@@ -127,11 +135,8 @@ class WeightedTrainer(Trainer):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.logits
-
-        # BCEWithLogitsLoss for multi-label (vs CrossEntropyLoss for single-label)
         loss_fct = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight.to(logits.device))
         loss = loss_fct(logits, labels.float())
-
         return (loss, outputs) if return_outputs else loss
 
 # 6. Training arguments
@@ -149,7 +154,7 @@ training_args = TrainingArguments(
     weight_decay=0.01,
     warmup_ratio=0.15,
     lr_scheduler_type="cosine",
-    label_smoothing_factor=0.0,     # must be 0 — incompatible with BCEWithLogitsLoss
+    label_smoothing_factor=0.0,
     load_best_model_at_end=True,
     metric_for_best_model="f1_macro",
     logging_dir='./logs_electra_emotion',
@@ -181,74 +186,135 @@ print("Starting ELECTRA-base multi-label emotion training")
 print("="*60)
 trainer.train()
 
-# 9. Test set evaluation
+# ── 9. Tune threshold on validation set ──────────────────────────────────────
+# After training, find the threshold that maximises macro-F1 on val,
+# both globally (one value for all classes) and per-class.
 print("\n" + "="*60)
-print("Evaluating on test set...")
+print("Tuning classification threshold on validation set...")
+print("="*60)
+
+val_output   = trainer.predict(val_dataset)
+val_probs    = sigmoid(val_output.predictions)   # shape (N, num_labels)
+val_true     = val_output.label_ids
+
+# --- Global threshold search ---
+best_global_t, best_global_f1 = 0.5, 0.0
+print(f"\n{'Threshold':<12} {'F1 Macro':<12} {'Precision':<12} {'Recall':<12} {'Exact Match'}")
+print("-" * 60)
+
+for t in np.arange(0.20, 0.81, 0.05):
+    preds = (val_probs >= t).astype(int)
+    # Guarantee at least one label per sample to avoid all-zero predictions
+    for row_i in range(len(preds)):
+        if preds[row_i].sum() == 0:
+            preds[row_i, val_probs[row_i].argmax()] = 1
+
+    p, r, f1, _ = precision_recall_fscore_support(val_true, preds, average='macro', zero_division=0)
+    em = accuracy_score(val_true, preds)
+    print(f"  {t:.2f}        {f1:.4f}       {p:.4f}       {r:.4f}       {em:.4f}")
+
+    if f1 > best_global_f1:
+        best_global_f1 = f1
+        best_global_t  = t
+
+print(f"\n✓ Best global threshold: {best_global_t:.2f}  →  Val F1 Macro: {best_global_f1:.4f}")
+
+# --- Per-class threshold search ---
+print("\n" + "="*60)
+print("Per-class threshold search...")
+print("="*60)
+
+per_class_thresholds = []
+for cls_i in range(num_labels):
+    best_t_cls, best_f1_cls = 0.5, 0.0
+    for t in np.arange(0.20, 0.81, 0.05):
+        preds_cls = (val_probs[:, cls_i] >= t).astype(int)
+        p, r, f1, _ = precision_recall_fscore_support(
+            val_true[:, cls_i], preds_cls, average='binary', zero_division=0
+        )
+        if f1 > best_f1_cls:
+            best_f1_cls = f1
+            best_t_cls  = t
+    per_class_thresholds.append(best_t_cls)
+    print(f"  {emotion_classes[cls_i]:<30} best_t={best_t_cls:.2f}  F1={best_f1_cls:.4f}")
+
+per_class_thresholds = np.array(per_class_thresholds)
+
+# ── 10. Test set evaluation ───────────────────────────────────────────────────
+print("\n" + "="*60)
+print("Evaluating on test set (global vs per-class threshold)...")
 print("="*60)
 
 preds_output = trainer.predict(test_dataset)
 y_true = preds_output.label_ids
 probs  = sigmoid(preds_output.predictions)
-y_pred = (probs >= THRESHOLD).astype(int)
 
-print("\n--- PER-CLASS REPORT ---")
-print(classification_report(
-    y_true, y_pred,
-    target_names=emotion_classes,
-    zero_division=0
-))
+# Helper: apply threshold, ensure no all-zero row
+def apply_threshold(probs_arr, threshold):
+    preds = (probs_arr >= threshold).astype(int)
+    for row_i in range(len(preds)):
+        if preds[row_i].sum() == 0:
+            preds[row_i, probs_arr[row_i].argmax()] = 1
+    return preds
 
-precision, recall, f1, _ = precision_recall_fscore_support(
-    y_true, y_pred, average='macro', zero_division=0
-)
-exact_match = accuracy_score(y_true, y_pred)
+y_pred_global    = apply_threshold(probs, best_global_t)
+y_pred_perclass  = apply_threshold(probs, per_class_thresholds)   # broadcasts correctly
 
-print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - ELECTRA-base Multi-Label Emotion")
-print(f"{'='*60}")
-print(f"  Exact Match Accuracy: {exact_match:.4f}")
-print(f"  Macro F1:             {f1:.4f}")
-print(f"  Macro Precision:      {precision:.4f}")
-print(f"  Macro Recall:         {recall:.4f}")
-print(f"{'='*60}")
+def report(y_true, y_pred, label):
+    p, r, f1, _ = precision_recall_fscore_support(y_true, y_pred, average='macro', zero_division=0)
+    em = accuracy_score(y_true, y_pred)
+    print(f"\n{'='*60}")
+    print(f"FINAL TEST RESULTS — {label}")
+    print(f"{'='*60}")
+    print(f"  Exact Match Accuracy: {em:.4f}")
+    print(f"  Macro F1:             {f1:.4f}")
+    print(f"  Macro Precision:      {p:.4f}")
+    print(f"  Macro Recall:         {r:.4f}")
+    print(f"{'='*60}")
+    print(classification_report(y_true, y_pred, target_names=emotion_classes, zero_division=0))
+    return {'exact_match': em, 'f1_macro': f1, 'precision_macro': p, 'recall_macro': r}
 
-# 10. Misclassified examples
+metrics_global   = report(y_true, y_pred_global,   f"Global threshold ({best_global_t:.2f})")
+metrics_perclass = report(y_true, y_pred_perclass, "Per-class thresholds")
+
+# ── 11. Misclassified examples ────────────────────────────────────────────────
 print("\n" + "="*60)
-print("MISCLASSIFIED EXAMPLES (up to 5)")
+print("MISCLASSIFIED EXAMPLES — per-class threshold (up to 5)")
 print("="*60)
 
 test_texts = test_df['text'].values
-wrong_idx  = np.where((y_true != y_pred).any(axis=1))[0]
+wrong_idx  = np.where((y_true != y_pred_perclass).any(axis=1))[0]
 print(f"\nTotal misclassified: {len(wrong_idx)} / {len(y_true)}")
 
 for i, idx in enumerate(wrong_idx[:5]):
     true_emotions = [emotion_classes[j] for j in range(num_labels) if y_true[idx][j] == 1]
-    pred_emotions = [emotion_classes[j] for j in range(num_labels) if y_pred[idx][j] == 1]
+    pred_emotions = [emotion_classes[j] for j in range(num_labels) if y_pred_perclass[idx][j] == 1]
     print(f"\n[Example {i+1}]")
     print(f"  True: {', '.join(true_emotions)}")
     print(f"  Pred: {', '.join(pred_emotions) or 'none'}")
     print(f"  Text: {test_texts[idx][:400]}...")
     print("-"*60)
 
-# 11. Save model
+# ── 12. Save model ────────────────────────────────────────────────────────────
 print("\nSaving model...")
-trainer.save_model('./ml_code/models/electra_emotion_final')
-tokenizer.save_pretrained('./ml_code/models/electra_emotion_final')
+trainer.save_model('./ml_code_emotion/models/electra_emotion_final')
+tokenizer.save_pretrained('./ml_code_emotion/models/electra_emotion_final')
 
 model_info = {
     'num_labels':   num_labels,
     'label2id':     label2id,
     'id2label':     id2label,
-    'threshold':    THRESHOLD,
+    'threshold_global':    float(best_global_t),
+    'threshold_per_class': {emotion_classes[i]: float(per_class_thresholds[i])
+                            for i in range(num_labels)},
     'problem_type': 'multi_label_classification',
-    'test_metrics': {
-        'exact_match_accuracy': exact_match,
-        'f1_macro':             f1,
-        'precision_macro':      precision,
-        'recall_macro':         recall
-    }
+    'pos_weight_strategy': 'sqrt_dampened_clamp5',
+    'test_metrics_global': metrics_global,
+    'test_metrics_perclass': metrics_perclass,
 }
-with open('./ml_code/models/electra_emotion_final/model_config.json', 'w') as f:
+with open('./ml_code_emotion/models/electra_emotion_final/model_config.json', 'w') as f:
     json.dump(model_info, f, indent=2)
 
-print("✓ Model saved to './ml_code/models/electra_emotion_final'")
+print("✓ Model saved to './ml_code_emotion/models/electra_emotion_final'")
+print("\nPer-class thresholds saved to model_config.json")
+print("Use 'threshold_per_class' at inference time for best results.")

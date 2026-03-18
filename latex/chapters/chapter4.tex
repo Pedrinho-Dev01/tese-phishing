@@ -1,19 +1,84 @@
 \chapter{Phishing Detection Model}
 
 \section{Model Selection}
-The first step in developing a phishing detection model is selecting an appropriate machine learning algorithm. Based on recent advances in NLP, we selected three transformer-based models: \acs{RoBERTa}\cite{liu2019roberta}, \acs{DeBERTa}\cite{he2021debertadecodingenhancedbertdisentangled}, and \acs{ELECTRA}\cite{clark2020electrapretrainingtextencoders}. These models have demonstrated state-of-the-art performance in various NLP tasks, including text classification and semantic similarity \cite{liu2019roberta, schneider2025comparative, sanh2019distilbert}. Their robust architectures and pretraining strategies make them suitable for the challenging task of phishing email detection.
+The first step in developing a phishing detection model is selecting an appropriate machine learning algorithm. Based on recent advances in \acs{NLP}, we selected two transformer-based models: \acs{RoBERTa}-base \cite{liu2019roberta} and \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}. These models have demonstrated state-of-the-art performance in various \acs{NLP} tasks, including text classification and semantic similarity \cite{liu2019roberta, schneider2025comparative, sanh2019distilbert}. Their robust architectures and pretraining strategies make them suitable for the challenging task of phishing email detection.
 
 \section{Dataset Preparation}
-The dataset used for training and evaluation consists of a collection of emails labeled as either ``phishing'' or ``non-phishing.'' The data was aggregated and preprocessed to ensure quality and consistency. The final dataset, stored in a CSV file, was split into training, validation, and test sets using stratified sampling to maintain class balance. The splits were as follows: 72\% for training, 8\% for validation, and 20\% for testing. Each email was mapped to a binary label (0 for non-phishing, 1 for phishing) to facilitate supervised learning.
+The dataset used for training and evaluation consists of a collection of emails labeled as either ``phishing'' or ``non-phishing.'' The data was aggregated and preprocessed to ensure quality and consistency. The final dataset was split into training, validation, and test sets using stratified sampling to maintain class balance across all splits. Specifically, 20\% of the data was first held out as the test set, and then 10\% of the remaining training data was reserved for validation, resulting in approximate splits of 72\% training, 8\% validation, and 20\% testing. Each email was mapped to a binary label (0 for non-phishing, 1 for phishing) to facilitate supervised learning. A fixed random seed was used across all splits to ensure reproducibility.
 
 \section{Model Implementation}
-The implementation leveraged the Hugging Face Transformers library \cite{wolf2020transformers} for model loading, tokenization, and training. For each model (\acs{RoBERTa}, \acs{DeBERTa}, \acs{ELECTRA}), the following steps were performed:
+The implementation leveraged the Hugging Face Transformers library \cite{wolf2020transformers} for model loading, tokenization, and training, combined with scikit-learn \cite{pedregosa2011scikit} for evaluation metrics and class weight computation. For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base), the following steps were performed:
+
 \begin{itemize}
-	\item \textbf{Tokenization:} Emails were tokenized using the respective pretrained tokenizer, with padding and truncation to a maximum length of 512 tokens.
-	\item \textbf{Model Fine-tuning:} The pretrained model was fine-tuned for binary sequence classification. Training was performed for up to 8 epochs, with early stopping based on validation performance to prevent overfitting.
-	\item \textbf{Optimization:} The \ac{AdamW} optimizer was used with a cosine learning rate scheduler, warmup steps, and label smoothing. Mixed precision training (\acs{FP16}) was enabled to accelerate computation on compatible hardware.
-	\item \textbf{Evaluation:} Model performance was monitored using accuracy, precision, recall, and F1-score. The best model checkpoint was selected based on the highest F1-score on the validation set.
+	\item \textbf{Tokenization:} Emails were tokenized using the respective pretrained tokenizer, with padding to the maximum length and truncation at 512 tokens.
+
+	\item \textbf{Class Imbalance Handling:} To address the imbalanced class distribution in the dataset, balanced class weights were computed using scikit-learn's \texttt{compute\_class\_weight} function. These weights were incorporated into the loss function through a custom weighted trainer that replaced the standard cross-entropy loss with a weighted variant, penalizing misclassifications of the minority class more heavily.
+
+	\item \textbf{Model Fine-tuning:} Each pretrained model was fine-tuned for binary sequence classification using the \acs{AdamW} optimizer \cite{loshchilov2019decoupled} with a cosine learning rate scheduler. Training was performed for up to 10 epochs with a learning rate of $2 \times 10^{-5}$, a warmup ratio of 0.15, and weight decay of 0.01. Label smoothing with a factor of 0.05 was applied to improve generalization. Early stopping with a patience of 3 epochs was used, monitoring the F1-score on the validation set, and the best model checkpoint was restored at the end of training.
+
+	\item \textbf{Computational Optimizations:} Mixed precision training using BF16 (Brain Floating Point 16-bit) \cite{micikevicius2018mixed} was enabled to accelerate computation and reduce memory usage on compatible GPU hardware. Gradient checkpointing was used to further reduce memory consumption at the cost of additional computation, and gradient clipping with a maximum norm of 1.0 was applied to stabilize training.
+
+	\item \textbf{Evaluation:} Model performance was monitored during training using accuracy, precision, recall, and F1-score. The best model checkpoint was selected based on the highest F1-score on the validation set. At inference time, in addition to using the standard decision threshold of 0.5, a custom threshold of 0.35 was evaluated. This lower threshold was chosen to increase recall for phishing detection, since in a security context, failing to detect a phishing email (false negative) carries greater risk than a false positive.
 \end{itemize}
 
 \section{Evaluation and Results}
-%TODO
+
+After training, each model was evaluated on the held-out test set. Two decision thresholds were compared: the standard threshold of 0.5, where the class with the highest softmax probability is selected, and a custom threshold of 0.35, which classifies an email as phishing whenever the predicted phishing probability exceeds 0.35. This lower threshold aims to improve recall at a modest cost to precision, reflecting the asymmetric cost of errors in phishing detection.
+
+\subsection{ELECTRA-base Results}
+
+Table~\ref{tab:electra_results} presents the test set performance of the \acs{ELECTRA}-base model at both decision thresholds.
+
+\begin{table}[htbp]
+\centering
+\caption{Test set results for \acs{ELECTRA}-base at standard and custom thresholds.}
+\label{tab:electra_results}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
+\hline
+0.5 (Standard) & 0.9236 & 0.8993 & 0.9531 & 0.8512 \\
+0.35 (Custom)  & 0.9246 & 0.9009 & 0.9509 & 0.8558 \\
+\hline
+\end{tabular}
+\end{table}
+
+The \acs{ELECTRA}-base model achieved an F1-score of 0.8993 at the standard threshold, with high precision (0.9531) but comparatively lower recall (0.8512). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9009 and recall to 0.8558, while precision decreased only slightly to 0.9509. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
+
+\subsection{RoBERTa-base Results}
+Table~\ref{tab:roberta_results} presents the test set performance of the \acs{RoBERTa}-base model at both decision thresholds.
+
+\begin{table}[htbp]
+\centering
+\caption{Test set results for \acs{RoBERTa}-base at standard and custom thresholds.}
+\label{tab:roberta_results}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
+\hline
+0.5 (Standard) & TODO & TODO & TODO & TODO \\
+0.35 (Custom)  & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+\end{table}
+
+At this stage, the \acs{RoBERTa}-base metrics are pending final training and evaluation export. Once available, this subsection should be updated with the exact values and an interpretation of the precision--recall trade-off between thresholds.
+
+\subsection{Comparative Analysis}
+Table~\ref{tab:phishing_model_comparison} summarizes both models using the threshold configuration selected for deployment.
+
+\begin{table}[htbp]
+\centering
+\caption{Cross-model comparison on the test set (selected threshold per model).}
+\label{tab:phishing_model_comparison}
+\begin{tabular}{lccccc}
+\hline
+\textbf{Model} & \textbf{Selected Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
+\hline
+\acs{ELECTRA}-base & 0.35 (Custom) & 0.9246 & 0.9009 & 0.9509 & 0.8558 \\
+\acs{RoBERTa}-base & TODO & TODO & TODO & TODO & TODO \\
+\hline
+\end{tabular}
+\end{table}
+
+Based on the current results, \acs{ELECTRA}-base provides a strong baseline with high precision and competitive recall under the custom threshold. A final comparative conclusion will be completed after inserting the \acs{RoBERTa}-base test metrics.
