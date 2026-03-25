@@ -50,14 +50,14 @@ class_weights = compute_class_weight(
 class_weights = torch.tensor(class_weights, dtype=torch.float32)
 print(f"\nClass weights: {class_weights}")
 
-# 5. Load ELECTRA-base
-tokenizer = AutoTokenizer.from_pretrained("google/electra-base-discriminator")
+# 5. Load ELECTRA-large
+tokenizer = AutoTokenizer.from_pretrained("google/electra-large-discriminator")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "google/electra-base-discriminator",
+    "google/electra-large-discriminator",
     num_labels=2
 )
 
-model.gradient_checkpointing_enable()
+# gradient_checkpointing disabled â€” A6000 has enough VRAM, runs faster without it
 
 data_collator = DataCollatorWithPadding(tokenizer)
 
@@ -105,31 +105,35 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 # 6. Training arguments
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+
 training_args = TrainingArguments(
-    output_dir='./results_electra',
+    output_dir='./results_electra_large',
     eval_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=2e-5,  # ELECTRA can handle slightly higher LR
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=64,
+    learning_rate=2e-5,             # ELECTRA-large is more sensitive; keep LR conservative
+    per_device_train_batch_size=64, # Reduced from 128: large model activations are bigger
+    per_device_eval_batch_size=128,
     gradient_accumulation_steps=1,
     max_grad_norm=1.0,
     greater_is_better=True,
     num_train_epochs=10,
     weight_decay=0.01,
-    warmup_ratio=0.15,
+    warmup_ratio=0.1,
     lr_scheduler_type="cosine",
     label_smoothing_factor=0.05,
     load_best_model_at_end=True,
     metric_for_best_model="f1",
-    logging_dir='./logs_electra',
-    logging_steps=50,
+    logging_dir='./logs_electra_large',
+    logging_steps=20,
     logging_first_step=True,
-    bf16=True,
+    bf16=use_bf16,
+    fp16=not use_bf16 and torch.cuda.is_available(),
     use_cpu=False,
-    gradient_checkpointing=True,
+    gradient_checkpointing=False,   # Disable: enough VRAM, faster without it
     optim="adamw_torch_fused",
-    dataloader_pin_memory=False,
+    dataloader_pin_memory=True,
+    dataloader_num_workers=4,       # Parallel data loading
     save_total_limit=2,
     report_to="none",
 )
@@ -147,7 +151,7 @@ trainer = WeightedTrainer(
 
 # 8. Train
 print("\n" + "="*60)
-print("Starting ELECTRA-base training")
+print("Starting ELECTRA-large training")
 print("="*60)
 trainer.train()
 
@@ -161,54 +165,37 @@ y_true = preds.label_ids
 y_pred_standard = preds.predictions.argmax(-1)
 
 probs = softmax(preds.predictions, axis=1)[:, 1]
-y_pred_custom = (probs >= 0.35).astype(int)
 
 print("\n--- RESULTS WITH STANDARD THRESHOLD (0.5) ---")
 print(confusion_matrix(y_true, y_pred_standard))
 print(classification_report(y_true, y_pred_standard, zero_division=0))
-
-print("\n--- RESULTS WITH CUSTOM THRESHOLD (0.35) ---")
-print(confusion_matrix(y_true, y_pred_custom))
-print(classification_report(y_true, y_pred_custom, zero_division=0))
 
 precision_std, recall_std, f1_std, _ = precision_recall_fscore_support(
     y_true, y_pred_standard, average='binary', zero_division=0
 )
 acc_std = accuracy_score(y_true, y_pred_standard)
 
-precision_custom, recall_custom, f1_custom, _ = precision_recall_fscore_support(
-    y_true, y_pred_custom, average='binary', zero_division=0
-)
-acc_custom = accuracy_score(y_true, y_pred_custom)
-
 print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - ELECTRA-base")
+print("FINAL TEST RESULTS - ELECTRA-large")
 print(f"{'='*60}")
 print("\nStandard Threshold (0.5):")
 print(f"  Accuracy:  {acc_std:.4f}")
 print(f"  F1 Score:  {f1_std:.4f}")
 print(f"  Precision: {precision_std:.4f}")
 print(f"  Recall:    {recall_std:.4f}")
-
-print("\nCustom Threshold (0.35):")
-print(f"  Accuracy:  {acc_custom:.4f}")
-print(f"  F1 Score:  {f1_custom:.4f}")
-print(f"  Precision: {precision_custom:.4f}")
-print(f"  Recall:    {recall_custom:.4f}")
 print(f"{'='*60}")
 
-# Display misclassified examples (using custom threshold) ##################################################
+# Display misclassified examples ##################################################
 print("\n" + "="*60)
-print("MISCLASSIFIED EXAMPLES (Custom Threshold 0.35)")
+print("MISCLASSIFIED EXAMPLES")
 print("="*60)
 
 # Get original texts from test_df
 test_texts = test_df['text'].values
-test_labels_original = test_df['label'].values
 
 # Find misclassified indices
-false_negatives_idx = np.where((y_true == 1) & (y_pred_custom == 0))[0]
-false_positives_idx = np.where((y_true == 0) & (y_pred_custom == 1))[0]
+false_negatives_idx = np.where((y_true == 1) & (y_pred_standard == 0))[0]
+false_positives_idx = np.where((y_true == 0) & (y_pred_standard == 1))[0]
 
 print(f"\nTotal False Negatives (Phishing classified as Non-Phishing): {len(false_negatives_idx)}")
 print(f"Total False Positives (Non-Phishing classified as Phishing): {len(false_positives_idx)}")
@@ -238,16 +225,15 @@ print("\n" + "="*60 + "\n")
 
 # 10. Save model
 print("\nSaving model...")
-trainer.save_model('./ml_code/models/electra_final')
-tokenizer.save_pretrained('./ml_code/models/electra_final')
+trainer.save_model('./ml_code/models/electra_large_final')
+tokenizer.save_pretrained('./ml_code/models/electra_large_final')
 
 import json
 threshold_info = {
-    'recommended_threshold': 0.35,
-    'standard_metrics': {'accuracy': acc_std, 'f1': f1_std, 'precision': precision_std, 'recall': recall_std},
-    'custom_metrics': {'accuracy': acc_custom, 'f1': f1_custom, 'precision': precision_custom, 'recall': recall_custom}
+    'evaluation_threshold': 0.5,
+    'metrics': {'accuracy': acc_std, 'f1': f1_std, 'precision': precision_std, 'recall': recall_std}
 }
-with open('./ml_code/models/electra_final/threshold_config.json', 'w') as f:
+with open('./ml_code/models/electra_large_final/threshold_config.json', 'w') as f:
     json.dump(threshold_info, f, indent=2)
 
-print("✓ Model saved to './ml_code/models/electra_final'")
+print("âœ“ Model saved to './ml_code/models/electra_large_final'")

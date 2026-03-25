@@ -6,6 +6,7 @@ latex/test.synctex.gz
 *.json
 user_making/create_doccano_users.py
 __pycache__/
+.vscode
 user_making/send_email.py
 ml_code/models
 results_electra

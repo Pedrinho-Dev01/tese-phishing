@@ -17,7 +17,6 @@ from sklearn.utils.class_weight import compute_class_weight
 from datasets import Dataset
 import pandas as pd
 import numpy as np
-from scipy.special import softmax
 import torch
 
 torch.cuda.empty_cache()
@@ -53,14 +52,14 @@ class_weights = compute_class_weight(
 class_weights = torch.tensor(class_weights, dtype=torch.float32)
 print(f"\nClass weights: {class_weights}")
 
-# 5. Load RoBERTa-base
-tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+# 5. Load RoBERTa-large
+tokenizer = AutoTokenizer.from_pretrained("roberta-large")
 model = AutoModelForSequenceClassification.from_pretrained(
-    "roberta-base",
+    "roberta-large",
     num_labels=2
 )
 
-model.gradient_checkpointing_enable()
+# gradient_checkpointing disabled â€” A6000 has enough VRAM, runs faster without it
 
 data_collator = DataCollatorWithPadding(tokenizer)
 
@@ -108,31 +107,35 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 # 6. Training arguments
+use_bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+
 training_args = TrainingArguments(
-    output_dir='./results_roberta',
+    output_dir='./results_roberta_large',
     eval_strategy="epoch",
     save_strategy="epoch",
-    learning_rate=2e-5,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=64,
+    learning_rate=3e-5,             # Slightly lower than base-optimised 4e-5; large models prefer more conservative LR
+    per_device_train_batch_size=64, # Reduced from 128: large model activations are bigger
+    per_device_eval_batch_size=128,
     gradient_accumulation_steps=1,
     max_grad_norm=1.0,
     greater_is_better=True,
     num_train_epochs=10,
     weight_decay=0.01,
-    warmup_ratio=0.15, 
+    warmup_ratio=0.1,
     lr_scheduler_type="cosine",
     label_smoothing_factor=0.05,
     load_best_model_at_end=True,
     metric_for_best_model="f1",
-    logging_dir='./logs_roberta',
-    logging_steps=50,
+    logging_dir='./logs_roberta_large',
+    logging_steps=20,
     logging_first_step=True,
-    bf16=True,
+    bf16=use_bf16,
+    fp16=not use_bf16 and torch.cuda.is_available(),
     use_cpu=False,
-    gradient_checkpointing=True,
+    gradient_checkpointing=False,   # Disable: enough VRAM, faster without it
     optim="adamw_torch_fused",
-    dataloader_pin_memory=False,
+    dataloader_pin_memory=True,
+    dataloader_num_workers=4,       # Parallel data loading
     save_total_limit=2,
     report_to="none",
 )
@@ -150,7 +153,7 @@ trainer = WeightedTrainer(
 
 # 8. Train
 print("\n" + "="*60)
-print("Starting RoBERTa-base training")
+print("Starting RoBERTa-large training")
 print("="*60)
 trainer.train()
 
@@ -163,55 +166,36 @@ preds = trainer.predict(test_dataset)
 y_true = preds.label_ids
 y_pred_standard = preds.predictions.argmax(-1)
 
-probs = softmax(preds.predictions, axis=1)[:, 1]
-y_pred_custom = (probs >= 0.35).astype(int)
-
 print("\n--- RESULTS WITH STANDARD THRESHOLD (0.5) ---")
 print(confusion_matrix(y_true, y_pred_standard))
 print(classification_report(y_true, y_pred_standard, zero_division=0))
-
-print("\n--- RESULTS WITH CUSTOM THRESHOLD (0.35) ---")
-print(confusion_matrix(y_true, y_pred_custom))
-print(classification_report(y_true, y_pred_custom, zero_division=0))
 
 precision_std, recall_std, f1_std, _ = precision_recall_fscore_support(
     y_true, y_pred_standard, average='binary', zero_division=0
 )
 acc_std = accuracy_score(y_true, y_pred_standard)
 
-precision_custom, recall_custom, f1_custom, _ = precision_recall_fscore_support(
-    y_true, y_pred_custom, average='binary', zero_division=0
-)
-acc_custom = accuracy_score(y_true, y_pred_custom)
-
 print(f"\n{'='*60}")
-print("FINAL TEST RESULTS - RoBERTa-Base")
+print("FINAL TEST RESULTS - RoBERTa-Large")
 print(f"{'='*60}")
 print("\nStandard Threshold (0.5):")
 print(f"  Accuracy:  {acc_std:.4f}")
 print(f"  F1 Score:  {f1_std:.4f}")
 print(f"  Precision: {precision_std:.4f}")
 print(f"  Recall:    {recall_std:.4f}")
-
-print("\nCustom Threshold (0.35):")
-print(f"  Accuracy:  {acc_custom:.4f}")
-print(f"  F1 Score:  {f1_custom:.4f}")
-print(f"  Precision: {precision_custom:.4f}")
-print(f"  Recall:    {recall_custom:.4f}")
 print(f"{'='*60}")
 
 # 10. Save model
 print("\nSaving model...")
-trainer.save_model('./ml_code/models/roberta_final')
-tokenizer.save_pretrained('./ml_code/models/roberta_final')
+trainer.save_model('./ml_code/models/roberta_large_final')
+tokenizer.save_pretrained('./ml_code/models/roberta_large_final')
 
 import json
 threshold_info = {
-    'recommended_threshold': 0.35,
-    'standard_metrics': {'accuracy': acc_std, 'f1': f1_std, 'precision': precision_std, 'recall': recall_std},
-    'custom_metrics': {'accuracy': acc_custom, 'f1': f1_custom, 'precision': precision_custom, 'recall': recall_custom}
+    'evaluation_threshold': 0.5,
+    'metrics': {'accuracy': acc_std, 'f1': f1_std, 'precision': precision_std, 'recall': recall_std}
 }
-with open('./ml_code/models/roberta_final/threshold_config.json', 'w') as f:
+with open('./ml_code/models/roberta_large_final/threshold_config.json', 'w') as f:
     json.dump(threshold_info, f, indent=2)
 
-print("✓ Model saved to './ml_code/models/roberta_final'")
+print("âœ“ Model saved to './ml_code/models/roberta_large_final'")
