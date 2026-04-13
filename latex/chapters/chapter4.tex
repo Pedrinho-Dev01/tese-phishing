@@ -37,13 +37,13 @@ Table~\ref{tab:electra_results} presents the test set performance of the \acs{EL
 \hline
 \textbf{Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
 \hline
-0.5 (Standard) & 0.9236 & 0.8993 & 0.9531 & 0.8512 \\
-0.35 (Custom)  & 0.9246 & 0.9009 & 0.9509 & 0.8558 \\
+0.5 (Standard) & 0.9256 & 0.9051 & 0.9230 & 0.8880 \\
+0.35 (Custom)  & 0.9256 & 0.9055 & 0.9195 & 0.8920 \\
 \hline
 \end{tabular}
 \end{table}
 
-The \acs{ELECTRA}-base model achieved an F1-score of 0.8993 at the standard threshold, with high precision (0.9531) but comparatively lower recall (0.8512). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9009 and recall to 0.8558, while precision decreased only slightly to 0.9509. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
+The \acs{ELECTRA}-base model achieved an F1-score of 0.9051 at the standard threshold, with high precision (0.9230) but comparatively lower recall (0.8880). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9055 and recall to 0.8920, while precision decreased only slightly to 0.9195. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
 
 \subsection{RoBERTa-base Results}
 Table~\ref{tab:roberta_results} presents the test set performance of the \acs{RoBERTa}-base model at both decision thresholds.
@@ -56,13 +56,13 @@ Table~\ref{tab:roberta_results} presents the test set performance of the \acs{Ro
 \hline
 \textbf{Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
 \hline
-0.5 (Standard) & TODO & TODO & TODO & TODO \\
-0.35 (Custom)  & TODO & TODO & TODO & TODO \\
+0.5 (Standard) & 0.9352 & 0.9169 & 0.9410 & 0.8940 \\
+0.35 (Custom)  & 0.9336 & 0.9150 & 0.9371 & 0.8940 \\
 \hline
 \end{tabular}
 \end{table}
 
-At this stage, the \acs{RoBERTa}-base metrics are pending final training and evaluation export. Once available, this subsection should be updated with the exact values and an interpretation of the precision--recall trade-off between thresholds.
+The \acs{RoBERTa}-base model achieved an F1-score of 0.9169 at the standard threshold, with very high precision (0.9410) and recall (0.8940). Lowering the threshold to 0.35 resulted in a slight decrease in accuracy and F1-score, with precision dropping to 0.9371 while recall remained unchanged at 0.8940. This suggests that for \acs{RoBERTa}-base, the standard threshold already provides a strong balance between precision and recall, and the custom threshold does not offer a significant improvement in this case.
 
 \subsection{Comparative Analysis}
 Table~\ref{tab:phishing_model_comparison} summarizes both models using the threshold configuration selected for deployment.
@@ -75,10 +75,10 @@ Table~\ref{tab:phishing_model_comparison} summarizes both models using the thres
 \hline
 \textbf{Model} & \textbf{Selected Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
 \hline
-\acs{ELECTRA}-base & 0.35 (Custom) & 0.9246 & 0.9009 & 0.9509 & 0.8558 \\
-\acs{RoBERTa}-base & TODO & TODO & TODO & TODO & TODO \\
+\acs{ELECTRA}-base & 0.35 (Custom) & 0.9256 & 0.9055 & 0.9230 & 0.8880 \\
+\acs{RoBERTa}-base & 0.35 (Custom) & 0.9336 & 0.9150 & 0.9371 & 0.8940 \\
 \hline
 \end{tabular}
 \end{table}
 
-Based on the current results, \acs{ELECTRA}-base provides a strong baseline with high precision and competitive recall under the custom threshold. A final comparative conclusion will be completed after inserting the \acs{RoBERTa}-base test metrics.
+Based on the similar performance of both models, the final selection was a combination of \acs{ELECTRA}-base and \acs{RoBERTa}-base, leveraging the strengths of both architectures. The ensemble approach was implemented using a simple majority voting mechanism, where the final prediction for each email is determined by the majority class predicted by the two models. This ensemble method aims to improve overall robustness and generalization by combining the complementary strengths of both models, resulting in enhanced phishing detection performance.

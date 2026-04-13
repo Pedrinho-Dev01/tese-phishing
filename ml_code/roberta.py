@@ -198,4 +198,4 @@ threshold_info = {
 with open('./ml_code/models/roberta_large_final/threshold_config.json', 'w') as f:
     json.dump(threshold_info, f, indent=2)
 
-print("âœ“ Model saved to './ml_code/models/roberta_large_final'")
+print("Model saved to './ml_code/models/roberta_large_final'")

@@ -1,7 +1,7 @@
 \chapter{Emotion Detection Model}
 
 \section{Model Selection}
-To model the emotional content present in phishing emails, we selected three transformer-based architectures: \acs{RoBERTa}-base \cite{liu2019roberta}, \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}, and \acs{DeBERTa}-v3-base \cite{he2021debertadecodingenhancedbertdisentangled}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
+To model the emotional content present in phishing emails, we selected two transformer-based architectures: \acs{RoBERTa}-base \cite{liu2019roberta} and \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
 
 Unlike the binary phishing detection task in Chapter~4, emotion detection is formulated here as a \textbf{multi-label classification} problem: a single phishing email may simultaneously express multiple emotions (e.g., fear and urgency). This formulation better reflects realistic phishing language, where overlapping emotional manipulation strategies are common.
 
@@ -15,7 +15,7 @@ To preserve label distribution during splitting, a stratification proxy was used
 \section{Model Implementation}
 Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenization, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
 
-For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base, \acs{DeBERTa}-v3-base), the following pipeline was applied:
+For each model (\acs{RoBERTa}-base and \acs{ELECTRA}-base), the following pipeline was applied:
 
 \begin{itemize}
 	\item \textbf{Tokenization:} Emails were tokenized with each model's pretrained tokenizer, padded to fixed length, and truncated at 512 tokens.
@@ -83,28 +83,6 @@ Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
 
 As with \acs{RoBERTa}, the global-versus-per-class comparison provides insight into calibration sensitivity and recall gains on minority emotion labels.
 
-\subsection{DeBERTa-v3-base Results}
-Table~\ref{tab:deberta_emotion_results} presents the test results for \acs{DeBERTa}-v3-base.
-
-\begin{table}[htbp]
-\centering
-\small
-\caption{Test set results for \acs{DeBERTa}-v3-base using global and per-class thresholds.}
-\label{tab:deberta_emotion_results}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccc}
-\hline
-\textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
-\hline
-Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
-Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
-\hline
-\end{tabular}
-}
-\end{table}
-
-The DeBERTa variant is included to evaluate whether disentangled attention yields additional gains in multi-label emotion recognition for phishing text.
-
 \subsection{Comparative Analysis}
 Table~\ref{tab:emotion_model_comparison} provides a cross-model summary using the best threshold strategy for each architecture.
 
@@ -120,7 +98,6 @@ Table~\ref{tab:emotion_model_comparison} provides a cross-model summary using th
 \hline
 \acs{RoBERTa}-base   & TODO & TODO & TODO & TODO & TODO \\
 \acs{ELECTRA}-base   & TODO & TODO & TODO & TODO & TODO \\
-\acs{DeBERTa}-v3-base & TODO & TODO & TODO & TODO & TODO \\
 \hline
 \end{tabular}
 }

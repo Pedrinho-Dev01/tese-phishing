@@ -9,7 +9,9 @@ __pycache__/
 .vscode
 user_making/send_email.py
 ml_code/models
+ml_code_emotion/models
 results_electra
 results_roberta
 results_electra_emotion
 results_roberta_emotion
+users.txt
