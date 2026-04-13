@@ -76,8 +76,6 @@ train_df, val_df = train_test_split(
 print(f"Train: {len(train_df):,} | Val: {len(val_df):,} | Test: {len(test_df):,}")
 
 # 4. Compute pos_weight with sqrt dampening + max clamp
-#    Raw ratio (neg/pos) pushes recall too high at the cost of precision.
-#    sqrt() dampens the effect; clamp(max=5) prevents extreme weights on very rare classes.
 train_label_matrix = np.stack(train_df['labels'].values)
 pos_counts = train_label_matrix.sum(axis=0)
 neg_counts = len(train_df) - pos_counts
@@ -89,8 +87,8 @@ pos_weight = torch.tensor(dampened_weights, dtype=torch.float32).clamp(max=5.0)
 print(f"\nRaw pos_weight:      {raw_weights.round(2)}")
 print(f"Dampened pos_weight: {pos_weight.numpy().round(2)}")
 
-# 5. Load DeBERTa-v3-base
-model_name = "microsoft/deberta-v3-base"
+# 5. Load DeBERTa-v3-large
+model_name = "microsoft/deberta-v3-large"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(
 	model_name,
@@ -126,12 +124,12 @@ train_dataset = to_dataset(train_df)
 val_dataset = to_dataset(val_df)
 test_dataset = to_dataset(test_df)
 
-# Threshold tuned on val set after training — 0.5 used during training only
 THRESHOLD = 0.5
 
 
 def compute_metrics(pred):
 	probs = sigmoid(pred.predictions)
+	# No fallback — raw threshold only
 	preds = (probs >= THRESHOLD).astype(int)
 	labels = pred.label_ids
 
@@ -204,47 +202,37 @@ trainer = WeightedTrainer(
 
 # 8. Train
 print("\n" + "=" * 60)
-print("Starting DeBERTa-v3-base multi-label emotion training")
+print("Starting DeBERTa-v3-large multi-label emotion training")
 print("=" * 60)
 trainer.train()
 
 # ── 9. Tune threshold on validation set ──────────────────────────────────────
 print("\n" + "=" * 60)
-print("Tuning classification threshold on validation set...")
+print("Tuning classification threshold on validation set (NO fallback)...")
 print("=" * 60)
 
 val_output = trainer.predict(val_dataset)
 val_probs  = sigmoid(val_output.predictions)
 val_true   = val_output.label_ids
 
-
-def apply_threshold(probs_arr, threshold):
-	"""Apply threshold; fall back to argmax if no label fires."""
-	# threshold can be a scalar or a per-class array (broadcasts correctly)
-	preds = (probs_arr >= threshold).astype(int)
-	for row_i in range(len(preds)):
-		if preds[row_i].sum() == 0:
-			preds[row_i, probs_arr[row_i].argmax()] = 1
-	return preds
-
-
-# --- Global threshold search ---
+# --- Global threshold search (no fallback) ---
 best_global_t, best_global_f1 = 0.5, 0.0
-print(f"\n{'Threshold':<12} {'F1 Macro':<12} {'Precision':<12} {'Recall':<12} {'Exact Match'}")
-print("-" * 60)
+print(f"\n{'Threshold':<12} {'F1 Macro':<12} {'Precision':<12} {'Recall':<12} {'Exact Match':<12} {'Empty Preds'}")
+print("-" * 72)
 
-for t in np.arange(0.20, 0.81, 0.05):
-	preds = apply_threshold(val_probs, t)
+for t in np.arange(0.10, 0.81, 0.05):
+	preds = (val_probs >= t).astype(int)
+	empty = (preds.sum(axis=1) == 0).sum()
 	p, r, f1, _ = precision_recall_fscore_support(val_true, preds, average='macro', zero_division=0)
 	em = accuracy_score(val_true, preds)
-	print(f"  {t:.2f}        {f1:.4f}       {p:.4f}       {r:.4f}       {em:.4f}")
+	print(f"  {t:.2f}        {f1:.4f}       {p:.4f}       {r:.4f}       {em:.4f}       {empty}")
 	if f1 > best_global_f1:
 		best_global_f1 = f1
 		best_global_t  = t
 
 print(f"\n✓ Best global threshold: {best_global_t:.2f}  →  Val F1 Macro: {best_global_f1:.4f}")
 
-# --- Per-class threshold search ---
+# --- Per-class threshold search (no fallback) ---
 print("\n" + "=" * 60)
 print("Per-class threshold search...")
 print("=" * 60)
@@ -252,7 +240,7 @@ print("=" * 60)
 per_class_thresholds = []
 for cls_i in range(num_labels):
 	best_t_cls, best_f1_cls = 0.5, 0.0
-	for t in np.arange(0.20, 0.81, 0.05):
+	for t in np.arange(0.10, 0.81, 0.05):
 		preds_cls = (val_probs[:, cls_i] >= t).astype(int)
 		p, r, f1, _ = precision_recall_fscore_support(
 			val_true[:, cls_i], preds_cls, average='binary', zero_division=0
@@ -267,15 +255,20 @@ per_class_thresholds = np.array(per_class_thresholds)
 
 # ── 10. Test set evaluation ───────────────────────────────────────────────────
 print("\n" + "=" * 60)
-print("Evaluating on test set (global vs per-class threshold)...")
+print("Evaluating on test set (NO fallback)...")
 print("=" * 60)
 
 preds_output = trainer.predict(test_dataset)
 y_true = preds_output.label_ids
 probs  = sigmoid(preds_output.predictions)
 
-y_pred_global   = apply_threshold(probs, best_global_t)
-y_pred_perclass = apply_threshold(probs, per_class_thresholds)
+y_pred_global   = (probs >= best_global_t).astype(int)
+y_pred_perclass = (probs >= per_class_thresholds).astype(int)
+
+# Report empty prediction counts honestly
+empty_global   = (y_pred_global.sum(axis=1) == 0).sum()
+empty_perclass = (y_pred_perclass.sum(axis=1) == 0).sum()
+print(f"\nSamples with NO predicted label — global: {empty_global}, per-class: {empty_perclass}")
 
 
 def report(y_true, y_pred, label):
@@ -328,8 +321,9 @@ model_info = {
 	'threshold_per_class': {emotion_classes[i]: float(per_class_thresholds[i])
 	                        for i in range(num_labels)},
 	'problem_type': 'multi_label_classification',
-	'base_model': model_name,
+	'large_model': model_name,
 	'pos_weight_strategy': 'sqrt_dampened_clamp5',
+	'apply_threshold_fallback': False,
 	'test_metrics_global': metrics_global,
 	'test_metrics_perclass': metrics_perclass,
 }

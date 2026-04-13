@@ -1,0 +1,35 @@
+============================================================
+MERGED LABEL DISTRIBUTION
+============================================================
+  positive_arousal          1,400  ( 57.1%)  ████████████████████████████
+  warmth                    1,353  ( 55.2%)  ███████████████████████████
+  curiosity                   816  ( 33.3%)  ████████████████
+  threat                      706  ( 28.8%)  ██████████████
+  confusion                   318  ( 13.0%)  ██████
+  relief                      230  (  9.4%)  ████
+  sadness                     191  (  7.8%)  ███
+
+============================================================
+LABELS PER SAMPLE (after merge)
+============================================================
+  1 label(s):   728  ( 29.7%)  ██████████████
+  2 label(s): 1,077  ( 44.0%)  █████████████████████
+  3 label(s):   486  ( 19.8%)  █████████
+  4 label(s):   122  (  5.0%)  ██
+  5 label(s):    36  (  1.5%)  
+  6 label(s):     1  (  0.0%)  
+
+  Mean  : 2.047
+  Median: 2.0
+
+============================================================
+MERGE MAP APPLIED
+============================================================
+  DROPPED                   ← neutral, unsure
+  confusion                 ← confusion
+  curiosity                 ← curiosity
+  positive_arousal          ← desire, excitement, joy, surprise
+  relief                    ← relief
+  sadness                   ← sadness
+  threat                    ← anger, fear
+  warmth                    ← admiration, caring, gratitude
