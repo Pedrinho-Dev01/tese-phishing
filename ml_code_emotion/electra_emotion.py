@@ -21,7 +21,7 @@ import json
 torch.cuda.empty_cache()
 
 # 1. Load dataset — keep only phishing emails
-df = pd.read_csv('code/combined_emails_dataset.csv')
+df = pd.read_csv('code/combined_emails_dataset_merged.csv')
 df = df[df['label'] == 'phishing'].copy()
 print(f"\nPhishing-only subset: {len(df):,} emails")
 
