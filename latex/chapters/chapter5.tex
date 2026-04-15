@@ -1,7 +1,7 @@
 \chapter{Emotion Detection Model}
 
 \section{Model Selection}
-To model the emotional content present in phishing emails, we selected three transformer-based architectures: \acs{RoBERTa}-base \cite{liu2019roberta}, \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}, and \acs{DeBERTa}-v3-base \cite{he2021debertadecodingenhancedbertdisentangled}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
+To model the emotional content present in phishing emails, we selected three transformer-based architectures: \acs{RoBERTa}-large \cite{liu2019roberta}, \acs{ELECTRA}-large \cite{clark2020electrapretrainingtextencoders}, and \acs{DeBERTa}-v3-large \cite{he2021debertadecodingenhancedbertdisentangled}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
 
 Unlike the binary phishing detection task in Chapter~4, emotion detection is formulated here as a \textbf{multi-label classification} problem: a single phishing email may simultaneously express multiple emotions (e.g., fear and urgency). This formulation better reflects realistic phishing language, where overlapping emotional manipulation strategies are common.
 
@@ -15,7 +15,7 @@ To preserve label distribution during splitting, a stratification proxy was used
 \section{Model Implementation}
 Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenization, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
 
-For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base, \acs{DeBERTa}-v3-base), the following pipeline was applied:
+For each model (\acs{RoBERTa}-large, \acs{ELECTRA}-large, \acs{DeBERTa}-v3-large), the following pipeline was applied:
 
 \begin{itemize}
 	\item \textbf{Tokenization:} Emails were tokenized with each model's pretrained tokenizer, padded to fixed length, and truncated at 512 tokens.
@@ -39,21 +39,21 @@ For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base, \acs{DeBERTa}-v3-base), 
 
 After training, each model was evaluated on the test set using both thresholding strategies selected from validation: global threshold and per-class thresholds. This comparison assesses whether class-specific calibration improves the balance between precision and recall across uneven emotion distributions.
 
-\subsection{RoBERTa-base Results}
-Table~\ref{tab:roberta_emotion_results} summarizes the test performance of the \acs{RoBERTa}-base model under both thresholding strategies.
+\subsection{RoBERTa-large Results}
+Table~\ref{tab:roberta_emotion_results} summarizes the test performance of the \acs{RoBERTa}-large model under both thresholding strategies.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Test set results for \acs{RoBERTa}-base using global and per-class thresholds.}
+\caption{Test set results for \acs{RoBERTa}-large using global and per-class thresholds.}
 \label{tab:roberta_emotion_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
 \hline
 \textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
 \hline
-Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
-Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
+Global threshold (best on val)   & 0.2918 & 0.6869 & 0.6823 & 0.7091 \\
+Per-class thresholds (best on val) & 0.2816 & 0.7041 & 0.6793 & 0.7477 \\
 \hline
 \end{tabular}
 }
@@ -61,21 +61,21 @@ Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
 
 The per-class strategy is expected to better account for class-specific score distributions, particularly for underrepresented emotions. Final numerical values should be inserted from the exported \texttt{model\_config.json} generated after training.
 
-\subsection{ELECTRA-base Results}
-Table~\ref{tab:electra_emotion_results} reports the corresponding results for \acs{ELECTRA}-base.
+\subsection{ELECTRA-large Results}
+Table~\ref{tab:electra_emotion_results} reports the corresponding results for \acs{ELECTRA}-large.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Test set results for \acs{ELECTRA}-base using global and per-class thresholds.}
+\caption{Test set results for \acs{ELECTRA}-large using global and per-class thresholds.}
 \label{tab:electra_emotion_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
 \hline
 \textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
 \hline
-Global threshold (best on val)   & TODO & TODO & TODO & TODO \\
-Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
+Global threshold & 0.3326 & 0.6967 & 0.7168 & 0.6911 \\
+Per-class thresholds & 0.2775 & 0.7036 & 0.6890 & 0.7407 \\
 \hline
 \end{tabular}
 }
@@ -83,13 +83,13 @@ Per-class thresholds (best on val) & TODO & TODO & TODO & TODO \\
 
 As with \acs{RoBERTa}, the global-versus-per-class comparison provides insight into calibration sensitivity and recall gains on minority emotion labels.
 
-\subsection{DeBERTa-v3-base Results}
-Table~\ref{tab:deberta_emotion_results} presents the test results for \acs{DeBERTa}-v3-base.
+\subsection{DeBERTa-v3-large Results}
+Table~\ref{tab:deberta_emotion_results} presents the test results for \acs{DeBERTa}-v3-large.
 
 \begin{table}[htbp]
 \centering
 \small
-\caption{Test set results for \acs{DeBERTa}-v3-base using global and per-class thresholds.}
+\caption{Test set results for \acs{DeBERTa}-v3-large using global and per-class thresholds.}
 \label{tab:deberta_emotion_results}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lcccc}
@@ -118,8 +118,8 @@ Table~\ref{tab:emotion_model_comparison} provides a cross-model summary using th
 \hline
 \textbf{Model} & \textbf{Best Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
 \hline
-\acs{RoBERTa}-base   & TODO & TODO & TODO & TODO & TODO \\
-\acs{ELECTRA}-base   & TODO & TODO & TODO & TODO & TODO \\
+\acs{RoBERTa}-base   & Per-class thresholds & 0.2816 & 0.7041 & 0.6793 & 0.7477 \\
+\acs{ELECTRA}-base   & Global threshold & 0.3326 & 0.6967 & 0.7168 & 0.6911 \\
 \acs{DeBERTa}-v3-base & TODO & TODO & TODO & TODO & TODO \\
 \hline
 \end{tabular}
