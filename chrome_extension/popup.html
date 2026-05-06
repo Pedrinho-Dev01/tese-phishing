@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gone Phishing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Gone<br /><span>Phishing.</span></h1>
+    <p class="tagline">Scan the email you have open</p>
+  </header>
+
+  <!-- Status / idle state -->
+  <div class="idle-state" id="idle-state">
+    <div class="fish-icon">🎣</div>
+    <p class="idle-msg">Open an email in Gmail or Outlook,<br />then click <strong>Scan</strong>.</p>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- Scan button -->
+  <button class="btn-scan" id="scan-btn" type="button">
+    <div class="spinner" id="spinner"></div>
+    <span id="btn-label">Scan email</span>
+  </button>
+
+  <!-- ── Spam Result ── -->
+  <div class="result-card" id="result-card">
+    <div class="result-header">
+      <div class="verdict-icon" id="verdict-icon">🛡️</div>
+      <div class="verdict-label">
+        <h2 id="verdict-text">—</h2>
+        <p id="verdict-sub">—</p>
+      </div>
+      <div class="prob-big" id="prob-big">—</div>
+    </div>
+
+    <div class="prob-bar-wrap">
+      <div class="prob-bar-track">
+        <div class="prob-bar-fill" id="prob-bar"></div>
+      </div>
+      <div class="prob-bar-labels">
+        <span>Ham</span>
+        <span id="threshold-label">Threshold: 35%</span>
+        <span>Spam</span>
+      </div>
+    </div>
+
+    <div class="breakdown">
+      <div class="model-row-item">
+        <div class="m-name">RoBERTa-Large</div>
+        <div class="m-prob" id="roberta-prob">—</div>
+        <div class="m-verdict" id="roberta-verdict">—</div>
+      </div>
+      <div class="model-row-item">
+        <div class="m-name">ELECTRA-Large</div>
+        <div class="m-prob" id="electra-prob">—</div>
+        <div class="m-verdict" id="electra-verdict">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Emotion Result ── -->
+  <div class="emotion-card" id="emotion-card">
+    <div class="emotion-header">
+      <span class="emotion-card-icon">🧠</span>
+      <div>
+        <h3 class="emotion-title">Emotional Tone</h3>
+        <p class="emotion-subtitle" id="emotion-subtitle">—</p>
+      </div>
+    </div>
+
+    <div class="emotion-detected-wrap" id="emotion-detected-wrap"></div>
+
+    <div class="emotion-bars" id="emotion-bars"></div>
+  </div>
+
+</div>
+<script src="popup.js"></script>
+</body>
+</html>

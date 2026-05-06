@@ -1,13 +1,13 @@
 \chapter{Phishing Detection Model}
 
 \section{Model Selection}
-The first step in developing a phishing detection model is selecting an appropriate machine learning algorithm. Based on recent advances in \acs{NLP}, we selected two transformer-based models: \acs{RoBERTa}-base \cite{liu2019roberta} and \acs{ELECTRA}-base \cite{clark2020electrapretrainingtextencoders}. These models have demonstrated state-of-the-art performance in various \acs{NLP} tasks, including text classification and semantic similarity \cite{liu2019roberta, schneider2025comparative, sanh2019distilbert}. Their robust architectures and pretraining strategies make them suitable for the challenging task of phishing email detection.
+The first step in developing a phishing detection model is selecting an appropriate machine learning algorithm. Based on recent advances in \acs{NLP}, we selected two transformer-based models: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electrapretrainingtextencoders}. These models have demonstrated state-of-the-art performance in various \acs{NLP} tasks, including text classification and semantic similarity \cite{liu2019roberta, schneider2025comparative, sanh2019distilbert}. Their robust architectures and pretraining strategies make them suitable for the challenging task of phishing email detection.
 
 \section{Dataset Preparation}
 The dataset used for training and evaluation consists of a collection of emails labeled as either ``phishing'' or ``non-phishing.'' The data was aggregated and preprocessed to ensure quality and consistency. The final dataset was split into training, validation, and test sets using stratified sampling to maintain class balance across all splits. Specifically, 20\% of the data was first held out as the test set, and then 10\% of the remaining training data was reserved for validation, resulting in approximate splits of 72\% training, 8\% validation, and 20\% testing. Each email was mapped to a binary label (0 for non-phishing, 1 for phishing) to facilitate supervised learning. A fixed random seed was used across all splits to ensure reproducibility.
 
 \section{Model Implementation}
-The implementation leveraged the Hugging Face Transformers library \cite{wolf2020transformers} for model loading, tokenization, and training, combined with scikit-learn \cite{pedregosa2011scikit} for evaluation metrics and class weight computation. For each model (\acs{RoBERTa}-base, \acs{ELECTRA}-base), the following steps were performed:
+The implementation leveraged the Hugging Face Transformers library \cite{wolf2020transformers} for model loading, tokenization, and training, combined with scikit-learn \cite{pedregosa2011scikit} for evaluation metrics and class weight computation. For each model (\acs{RoBERTa}-large, \acs{ELECTRA}-large), the following steps were performed:
 
 \begin{itemize}
 	\item \textbf{Tokenization:} Emails were tokenized using the respective pretrained tokenizer, with padding to the maximum length and truncation at 512 tokens.
@@ -25,13 +25,13 @@ The implementation leveraged the Hugging Face Transformers library \cite{wolf202
 
 After training, each model was evaluated on the held-out test set. Two decision thresholds were compared: the standard threshold of 0.5, where the class with the highest softmax probability is selected, and a custom threshold of 0.35, which classifies an email as phishing whenever the predicted phishing probability exceeds 0.35. This lower threshold aims to improve recall at a modest cost to precision, reflecting the asymmetric cost of errors in phishing detection.
 
-\subsection{ELECTRA-base Results}
+\subsection{ELECTRA-large Results}
 
-Table~\ref{tab:electra_results} presents the test set performance of the \acs{ELECTRA}-base model at both decision thresholds.
+Table~\ref{tab:electra_results} presents the test set performance of the \acs{ELECTRA}-large model at both decision thresholds.
 
 \begin{table}[htbp]
 \centering
-\caption{Test set results for \acs{ELECTRA}-base at standard and custom thresholds.}
+\caption{Test set results for \acs{ELECTRA}-large at standard and custom thresholds.}
 \label{tab:electra_results}
 \begin{tabular}{lcccc}
 \hline
@@ -43,14 +43,14 @@ Table~\ref{tab:electra_results} presents the test set performance of the \acs{EL
 \end{tabular}
 \end{table}
 
-The \acs{ELECTRA}-base model achieved an F1-score of 0.9051 at the standard threshold, with high precision (0.9230) but comparatively lower recall (0.8880). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9055 and recall to 0.8920, while precision decreased only slightly to 0.9195. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
+The \acs{ELECTRA}-large model achieved an F1-score of 0.9051 at the standard threshold, with high precision (0.9230) but comparatively lower recall (0.8880). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9055 and recall to 0.8920, while precision decreased only slightly to 0.9195. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
 
-\subsection{RoBERTa-base Results}
-Table~\ref{tab:roberta_results} presents the test set performance of the \acs{RoBERTa}-base model at both decision thresholds.
+\subsection{RoBERTa-large Results}
+Table~\ref{tab:roberta_results} presents the test set performance of the \acs{RoBERTa}-large model at both decision thresholds.
 
 \begin{table}[htbp]
 \centering
-\caption{Test set results for \acs{RoBERTa}-base at standard and custom thresholds.}
+\caption{Test set results for \acs{RoBERTa}-large at standard and custom thresholds.}
 \label{tab:roberta_results}
 \begin{tabular}{lcccc}
 \hline
@@ -62,7 +62,7 @@ Table~\ref{tab:roberta_results} presents the test set performance of the \acs{Ro
 \end{tabular}
 \end{table}
 
-The \acs{RoBERTa}-base model achieved an F1-score of 0.9169 at the standard threshold, with very high precision (0.9410) and recall (0.8940). Lowering the threshold to 0.35 resulted in a slight decrease in accuracy and F1-score, with precision dropping to 0.9371 while recall remained unchanged at 0.8940. This suggests that for \acs{RoBERTa}-base, the standard threshold already provides a strong balance between precision and recall, and the custom threshold does not offer a significant improvement in this case.
+The \acs{RoBERTa}-large model achieved an F1-score of 0.9169 at the standard threshold, with very high precision (0.9410) and recall (0.8940). Lowering the threshold to 0.35 resulted in a slight decrease in accuracy and F1-score, with precision dropping to 0.9371 while recall remained unchanged at 0.8940. This suggests that for \acs{RoBERTa}-large, the standard threshold already provides a strong balance between precision and recall, and the custom threshold does not offer a significant improvement in this case.
 
 \subsection{Comparative Analysis}
 Table~\ref{tab:phishing_model_comparison} summarizes both models using the threshold configuration selected for deployment.
@@ -75,10 +75,10 @@ Table~\ref{tab:phishing_model_comparison} summarizes both models using the thres
 \hline
 \textbf{Model} & \textbf{Selected Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
 \hline
-\acs{ELECTRA}-base & 0.35 (Custom) & 0.9256 & 0.9055 & 0.9230 & 0.8880 \\
-\acs{RoBERTa}-base & 0.35 (Custom) & 0.9336 & 0.9150 & 0.9371 & 0.8940 \\
+\acs{ELECTRA}-large & 0.35 (Custom) & 0.9256 & 0.9055 & 0.9230 & 0.8880 \\
+\acs{RoBERTa}-large & 0.35 (Custom) & 0.9336 & 0.9150 & 0.9371 & 0.8940 \\
 \hline
 \end{tabular}
 \end{table}
 
-Based on the similar performance of both models, the final selection was a combination of \acs{ELECTRA}-base and \acs{RoBERTa}-base, leveraging the strengths of both architectures. The ensemble approach was implemented using a simple majority voting mechanism, where the final prediction for each email is determined by the majority class predicted by the two models. This ensemble method aims to improve overall robustness and generalization by combining the complementary strengths of both models, resulting in enhanced phishing detection performance.
+Based on the similar performance of both models, the final selection was a combination of \acs{ELECTRA}-large and \acs{RoBERTa}-large, leveraging the strengths of both architectures. The ensemble approach was implemented using a simple majority voting mechanism, where the final prediction for each email is determined by the majority class predicted by the two models. This ensemble method aims to improve overall robustness and generalization by combining the complementary strengths of both models, resulting in enhanced phishing detection performance.
