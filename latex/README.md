@@ -1,152 +1,72 @@
-# University of Aveiro Thesis Template
+# Gone Phishing
 
-A thesis LaTeX template that complies with the University of Aveiro's
-guidelines and provides a simple CLI workflow around `make` that was developed
-and tested for cross-compatibility on Linux (Slackware, ArchLinux, Debian, Ubuntu) and macOS.
+A spam detection and emotion analysis tool for `.eml` email files, powered by an ensemble of fine-tuned **RoBERTa-Large** and **ELECTRA-Large** models.
 
-This template was developed by professors and students. 
-We will try to keep up to date with thesis requirements but some discrepancies may exist.
-Feel free to open issues and pull requests with new options, packages and fixes.
+## What it does
 
-## Usage
+- **Spam detection** — classifies emails as ham, maybe spam, or spam using an averaged ensemble of two binary classifiers, each with its own calibrated threshold.
+- **Emotion analysis** — detects up to 8 consolidated emotions (positive arousal, warmth, threat, curiosity, confusion, sadness, relief, neutral) using a multi-label ensemble with per-class thresholds.
+- **Web UI** — drag-and-drop `.eml` files onto the frontend and get instant results with animated probability bars and per-model breakdowns.
+- **Chrome extension** — scan emails open in Gmail or Outlook Web directly from the browser toolbar.
 
-Optional: In debian and ubuntu you can install all dependencies automatically:
+## Models
 
-```
-make setup
-```
+| Model | Repo | Task |
+|---|---|---|
+| RoBERTa-Large (spam) | `Dpedrinho01/trained_roberta_large` | Binary spam/ham |
+| ELECTRA-Large (spam) | `Dpedrinho01/trained_electra_large` | Binary spam/ham |
+| RoBERTa-Large (emotion) | `Dpedrinho01/trained_roberta_emotion` | Multi-label emotion (8 classes) |
+| ELECTRA-Large (emotion) | `Dpedrinho01/trained_electra_emotion` | Multi-label emotion (8 classes) |
 
-Build a development version of the document:
+Each model ships a config file (`threshold_config.json` for spam, `model_config.json` for emotion) that is loaded from the Hugging Face Hub at startup.
 
-```
-make [build]
-```
+## API
 
-Continuously build the development version of the document:
+Run locally with:
 
-```
-make preview
-```
-
-This option is great when paired with a document viewer (such as Okular) which
-automatically reloads the document on file change. This means you can keep
-writing and on save the updated document is compiled and displayed!
-
-Build versions of the document for publishing:
-
-```
-make print
-make ebook
+```bash
+pip install -r requirements.txt
+uvicorn api:app --reload
 ```
 
-Run linters (for now only [proselint](http://proselint.com/)) against a TeX
-file (e.g. chapter 1):
+### Endpoints
 
-```
-make lint [texfile=chapter1.tex]
-```
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/` | Root liveness check |
+| `GET` | `/health` | Model load status and device info |
+| `POST` | `/predict` | Spam classification on raw text |
+| `POST` | `/predict/emotion` | Emotion detection on raw text |
+| `POST` | `/predict/eml` | Full analysis (spam + emotion) from a base64-encoded `.eml` file |
+| `POST` | `/predict/batch` | Batch spam classification (up to 50 texts) |
 
-If you do not specify the `texfile` to lint, then all TeX files in `chapters/`
-will be linted.
+The `/predict/eml` endpoint returns a combined response:
 
-Clean the build directory:
-
-```
-make clean[all]
-```
-
-`clean` will leave the output products (the PDFs) in place, while `cleanall`
-will remove these too. If your document is not compiling for some reason and
-you think you've already solved the problem in the LaTeX sources, maybe try a
-`cleanall` before insisting. Sometimes the underlying build programs (namely
-`latexmk`) get stuck in inconsistent temporary files.
-
-## How to use the template
-
-This is all great, but how can this repository be used as a starting point for
-writing your own thesis?
-
-In our opinion you have mostly three options:
-- Download/clone the repository and copy *all* files to a directory of your
-  desire, for instance to inside some special folder within you own thesis
-  repository.  
-  Notice that this will not allow you to easily keep up with this template
-  should it change.
-- Fork the repository to your own and work there. If you want to include it
-  within your own thesis repository, you can use `git submodules` for this.
-- Use `git subtree` to pull this repository to your main thesis repository and
-  work directly there. Changes in your copy will be versioned by your main
-  thesis repo, while you will still be able to pull new updates from here
-  should they appear.
-
-The last of these options mas be the most adquate, as it seems to be the most flexible and
-easy-to-use alternative. Here follow the main commands you will need should you
-choose to go along with this too.
-```
-$ mkdir mythesis
-$ git init .
-$ git commit --allow-empty -n -m "Initial commit."
-$ git subtree add  --prefix document https://github.com/detiuaveiro/ua-thesis-template.git master --squash;
-$ git subtree pull --prefix document https://github.com/detiuaveiro/ua-thesis-template.git master --squash;
+```json
+{
+  "spam":    { "is_spam": false, "maybe_spam": false, "spam_probability": 0.07, "..." },
+  "emotion": { "detected_emotions": ["curiosity", "neutral"], "all_scores": [...] }
+}
 ```
 
-- The first line will init a new repository for your thesis
-- It will create an initial commit
-- It will pull this repository for the first time to `document`
-- The second is used for subsequent pulls.
+## Project structure
 
-The result should be a git repository for your thesis work. In the `$DESTDIR` (e.g. `document`)
-you will have the document to edit. If you wish you can add a reference to another git repository
-to track your own changes.
+```
+├── api.py                    # FastAPI backend
+├── index.html                # Frontend
+├── style.css                 # Styles
+├── app.js                    # Frontend logic
+├── requirements.txt
+├── chrome_extension/         # MV3 Chrome extension (Gmail + Outlook Web)
+│   ├── manifest.json
+│   ├── popup.html/css/js
+│   └── content.js
+└── latex/                    # Thesis source
+```
 
-## Use as a template in github
+## Stack
 
-Please check the [github instructions](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template)
-to create your own repository using this as a template.
-
-## Use it in [Overleaf](https://www.overleaf.com)
-
-It is possible to use this template in overleaf.
-
-To enable it:
-
-- in `matter.tex` change `\def\useoverleaf{0}`to 1
-- add `fc-portuges.def` to the project the file be can found in [here](http://mirrors.ctan.org/install/macros/latex/contrib/fmtcount.tds.zip) 
-- change the main document to `matter.tex`
-
-## Dependencies
-
-- A TeX distribution: TeX Live or MacTeX
-- gs (for `make print`, `make ebook` and `simplify-colors.sh`)
-- pandoc (for `make lint`)
-- imagemagick and poppler (for `simplify-colors.sh`)
-- pygments (for minted)
-
-As for pygments and proselint, those can by installed with pip by issuing `pip
-install -r requirements.txt` at the root of this repository.
-
-On Ubuntu relatives the following dependencies, installable with `apt` may
-also be required
-- biber
-- texlive-bibtex-extra
-- texlive-latex-extra
-- texlive-science
-
-These endorsed dependencies which may or may not come with the TeX Live package
-distributed with your Linux distribution.
-
-Usually TeX Live is split into a minimal package and a `texlive-extra` which is
-filled with the remainder of TeX Live, be it fonts, styles, language support,
-and so on. So, if a LaTeX dependency is missing on your installation, do verify
-that you are not missing one of these packages.
-
-## Authors
-
-Tomás Oliveira e Silva created the [original
-template](http://sweet.ua.pt/tos/TeX/ua_thesis.tgz) which was later picked up
-by João Paulo Barraca who [improved and maintained it for
-years](http://code.ua.pt//projects/latex-ua/repository).
-
-This is a fork by Fábio Maia and Ricardo Jesus who wanted to further improve
-the template and setup a clean environment and workflow for writing their MSc
-thesis.
+**Backend** — FastAPI · PyTorch · Hugging Face Transformers  
+**Frontend** — Vanilla JS · DM Sans / Playfair Display / DM Mono  
+**Extension** — Chrome MV3 · content script DOM extraction  
+**Hosted inference** — Hugging Face Spaces (`Dpedrinho01/api-host`)

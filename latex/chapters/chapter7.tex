@@ -1,7 +1,21 @@
 \chapter{Conclusions}
 
-This thesis has presented a comprehensive study on the creation, annotation, and classification of phishing emails based on their emotional content. The development of a novel dataset, combined with a robust annotation framework, has laid the groundwork for future research in the following months.
+This thesis has presented a comprehensive study on the detection of phishing emails through linguistic patterns and sentiment analysis. The work encompassed dataset creation and annotation, the training and evaluation of transformer-based classification models, and the development of a deployable web application with a companion browser extension.
 
-The dataset creation process leveraged advanced LLM techniques to generate a diverse and representative corpus of phishing emails, ensuring coverage across multiple emotional categories. The annotation framework was designed to optimize inter-annotator agreement and minimize bias, resulting in high-quality labeled data suitable for training machine learning models.
+\section{Summary of Contributions}
 
-Future work will focus on training and evaluating various machine learning algorithms on the annotated dataset, exploring the effectiveness of different feature extraction methods, and investigating the impact of emotional content on phishing email detection rates. Additionally, further refinement of the annotation guidelines and expansion of the dataset to include more diverse samples will be considered to enhance the robustness of the classification models and improve classification accuracy.
+The dataset creation process leveraged advanced \acs{LLM} techniques to generate a diverse and representative corpus of phishing emails across multiple emotional categories. The annotation framework was designed to optimise inter-annotator agreement and minimise bias, resulting in high-quality labelled data. A principled consolidation of the original fifteen-category emotional taxonomy into eight semantically coherent classes was carried out, informed by co-occurrence analysis of the annotated corpus.
+
+Two distinct classification tasks were addressed. For phishing detection, fine-tuned \acs{RoBERTa}-large and \acs{ELECTRA}-large binary classifiers achieved F1-scores of 0.9150 and 0.9055, respectively, on the held-out test set. A three-tier ensemble inference scheme,  classifying emails as \textit{ham}, \textit{maybe spam}, or \textit{spam}, was adopted to surface borderline cases without forcing a hard binary decision, reflecting the asymmetric cost of false negatives in a security context.
+
+For emotion detection, the same two architectures were fine-tuned as multi-label classifiers over the eight consolidated emotional classes. Per-class threshold tuning on the validation set yielded macro-F1 scores of 0.7041 (\acs{RoBERTa}-large) and 0.6967 (\acs{ELECTRA}-large) on the test set, demonstrating that transformer models can reliably identify the psychological manipulation tactics present in phishing emails.
+
+The trained models were integrated into a full-stack web application, \textit{Gone Phishing}, consisting of a FastAPI backend hosted on Hugging Face Spaces and a static frontend that accepts \texttt{.eml} file uploads. A companion Manifest V3 Chrome extension extends the same analysis capability to Gmail and Outlook Web, allowing users to scan open emails directly from their inbox without leaving the browser.
+
+\section{Limitations}
+
+Several limitations should be acknowledged. The phishing email corpus was generated synthetically using \acs{LLM} prompting, which may not fully capture the diversity and adversarial sophistication of real-world phishing campaigns. The annotation process was constrained by time and annotator availability, with only a subset of the full corpus receiving manual validation. Emotion detection performance, while promising, remains below the level achieved for binary spam classification, partly due to the inherent subjectivity of multi-label emotional annotation and the class imbalance present even after taxonomy consolidation.
+
+\section{Future Work}
+
+Future work will focus on expanding the annotated corpus with a broader set of annotators to improve inter-annotator agreement and label coverage. Augmenting the training data with real-world phishing examples, collected from sources such as the \acs{APWG} eCrime Exchange, would improve the ecological validity of the models. Further investigation into adversarial robustness is warranted, particularly as \acs{AI}-generated phishing content becomes more prevalent. On the application side, extending the Chrome extension to support additional email clients and languages would increase the practical reach of the system.
