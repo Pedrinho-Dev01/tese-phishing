@@ -25,6 +25,33 @@
   --emo-neutral:          #78909c;
 }
 
+/* ── Light mode overrides ── */
+body.light {
+  --bg:        #f5f6fa;
+  --surface:   #ffffff;
+  --border:    #dde1ee;
+  --border-hi: #b8bfd8;
+  --text:      #1a1c2e;
+  --muted:     #8289a8;
+  --accent:    #5056d6;
+  --accent-lo: #5056d618;
+  --spam:      #d93656;
+  --spam-lo:   #d9365612;
+  --maybe:     #c97d10;
+  --maybe-lo:  #c97d1012;
+  --ham:       #1a9e6e;
+  --ham-lo:    #1a9e6e12;
+
+  --emo-positive_arousal: #c49000;
+  --emo-warmth:           #c42060;
+  --emo-threat:           #5e38a8;
+  --emo-curiosity:        #1565c0;
+  --emo-confusion:        #7b1fa2;
+  --emo-sadness:          #3949ab;
+  --emo-relief:           #00796b;
+  --emo-neutral:          #546e7a;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -36,6 +63,7 @@ body {
   font-weight: 300;
   padding: 20px 18px 24px;
   overflow-x: hidden;
+  transition: background 0.25s, color 0.25s;
 }
 
 /* grid bg */
@@ -55,7 +83,10 @@ body::before {
 .wrap { position: relative; z-index: 1; }
 
 /* ── Header ── */
-header { margin-bottom: 18px; }
+header {
+  margin-bottom: 18px;
+  position: relative;
+}
 
 h1 {
   font-family: 'Playfair Display', serif;
@@ -72,6 +103,34 @@ h1 span { color: var(--accent); }
   color: var(--muted);
   font-family: 'DM Mono', monospace;
   letter-spacing: 0.04em;
+}
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-hi);
+  transform: scale(1.08);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
 }
 
 /* ── Idle ── */
@@ -143,7 +202,7 @@ h1 span { color: var(--accent); }
   overflow: hidden;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.3s, transform 0.3s;
+  transition: opacity 0.3s, transform 0.3s, background 0.25s, border-color 0.25s;
   margin-bottom: 12px;
 }
 .result-card.visible { opacity: 1; transform: translateY(0); }
@@ -225,6 +284,7 @@ h1 span { color: var(--accent); }
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
+  transition: background 0.25s, border-color 0.25s;
 }
 .m-name {
   font-family: 'DM Mono', monospace;
@@ -240,7 +300,7 @@ h1 span { color: var(--accent); }
 .col-maybe { color: var(--maybe); }
 .col-ham   { color: var(--ham);   }
 
-/* ── Emotion card ── */
+/* ── Emotion card — hidden until phishing detected ── */
 .emotion-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -248,10 +308,15 @@ h1 span { color: var(--accent); }
   overflow: hidden;
   opacity: 0;
   transform: translateY(10px);
-  transition: opacity 0.35s 0.08s, transform 0.35s 0.08s;
+  transition: opacity 0.35s 0.08s, transform 0.35s 0.08s, background 0.25s, border-color 0.25s;
   margin-bottom: 4px;
+  display: none;
 }
-.emotion-card.visible { opacity: 1; transform: translateY(0); }
+.emotion-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  display: block;
+}
 
 .emotion-header {
   padding: 14px 16px 10px;
@@ -261,6 +326,11 @@ h1 span { color: var(--accent); }
   border-bottom: 1px solid var(--border);
   background: linear-gradient(135deg, #1a1c2a 0%, var(--surface) 100%);
 }
+
+body.light .emotion-header {
+  background: linear-gradient(135deg, #eef0f8 0%, var(--surface) 100%);
+}
+
 .emotion-card-icon { font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
 .emotion-title {
   font-family: 'Playfair Display', serif;
@@ -268,6 +338,7 @@ h1 span { color: var(--accent); }
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  color: var(--text);
 }
 .emotion-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
 

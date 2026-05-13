@@ -13,6 +13,40 @@ const EMOTION_META = {
   neutral:          { icon: '😐', color: 'var(--emo-neutral)'          },
 };
 
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+const themeToggle = document.getElementById('theme-toggle');
+const themeIcon   = document.getElementById('theme-icon');
+
+function applyTheme(light) {
+  if (light) {
+    document.body.classList.add('light');
+    themeIcon.textContent = '🌙';
+    themeToggle.title = 'Switch to dark mode';
+    // chrome.storage is async; use it if available, fall back to localStorage
+    try { chrome.storage.local.set({ theme: 'light' }); } catch (_) {}
+  } else {
+    document.body.classList.remove('light');
+    themeIcon.textContent = '☀️';
+    themeToggle.title = 'Switch to light mode';
+    try { chrome.storage.local.set({ theme: 'dark' }); } catch (_) {}
+  }
+}
+
+// Restore saved preference on load
+try {
+  chrome.storage.local.get('theme', result => {
+    applyTheme(result.theme === 'light');
+  });
+} catch (_) {
+  // Fallback for non-extension contexts
+  applyTheme(false);
+}
+
+themeToggle.addEventListener('click', () => {
+  applyTheme(!document.body.classList.contains('light'));
+});
+
+// ── Email extraction ──────────────────────────────────────────────────────────
 function extractEmailFromPage() {
   function detectClient() {
     const host = location.hostname;
@@ -109,7 +143,7 @@ async function analyseText(text) {
   return { spam, emotion };
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function setLoading(on) {
   const btn = document.getElementById('scan-btn');
@@ -150,7 +184,7 @@ function extractTextFromInjectionResult(result) {
   };
 }
 
-// ── Spam rendering ────────────────────────────────────────────────────────────
+// ── Spam rendering ─────────────────────────────────────────────────────────────
 
 function modelColorClass(prob, threshold) {
   if (prob >= 0.5)        return 'col-spam';
@@ -161,7 +195,7 @@ function modelColorClass(prob, threshold) {
 function modelVerdictLabel(prob, threshold) {
   if (prob >= 0.5)        return '🚨 Spam';
   if (prob >= threshold)  return '⚠️ Maybe';
-  return '✅ Ham';
+  return '✅ Legitimate';
 }
 
 function renderSpam(data) {
@@ -179,7 +213,7 @@ function renderSpam(data) {
   document.getElementById('verdict-sub').textContent =
     isSpam  ? 'Classified as spam by the ensemble' :
     isMaybe ? 'Some spam signals — review carefully' :
-              'No spam signals found';
+              'No spam signals found — classified as legitimate';
 
   document.getElementById('prob-big').textContent = pct + '%';
   document.getElementById('threshold-label').textContent =
@@ -209,14 +243,13 @@ function renderSpam(data) {
   requestAnimationFrame(() => card.classList.add('visible'));
 }
 
-// ── Emotion rendering ─────────────────────────────────────────────────────────
+// ── Emotion rendering ──────────────────────────────────────────────────────────
 
 function renderEmotion(data) {
   const card     = document.getElementById('emotion-card');
   const detected = data.detected_emotions || [];
   const scores   = data.all_scores || [];
 
-  // Subtitle
   document.getElementById('emotion-subtitle').textContent =
     detected.length === 0
       ? 'No strong emotions detected.'
@@ -268,7 +301,7 @@ function renderEmotion(data) {
   requestAnimationFrame(() => card.classList.add('visible'));
 }
 
-// ── Main scan logic ───────────────────────────────────────────────────────────
+// ── Main scan logic ────────────────────────────────────────────────────────────
 
 async function runScan() {
   hideError();
@@ -276,10 +309,8 @@ async function runScan() {
   setLoading(true);
 
   try {
-    // 1. Get the active tab
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // 2. Extract the open email directly from the active page.
     const [injectionResult] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: extractEmailFromPage,
@@ -299,11 +330,14 @@ async function runScan() {
 
     hideIdle();
 
-    // 3. Call the API directly from the popup.
     const result = await analyseText(extracted.text);
 
     renderSpam(result.spam);
-    renderEmotion(result.emotion);
+
+    // Only show emotion analysis when phishing or maybe-spam is detected
+    if (result.spam.is_spam || result.spam.maybe_spam) {
+      renderEmotion(result.emotion);
+    }
 
   } catch (err) {
     showError(

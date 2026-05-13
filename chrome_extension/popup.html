@@ -14,6 +14,9 @@
   <header>
     <h1>Gone<br /><span>Phishing.</span></h1>
     <p class="tagline">Scan the email you have open</p>
+    <button class="theme-toggle" id="theme-toggle" title="Switch to light mode" aria-label="Toggle light/dark mode">
+      <span id="theme-icon">☀️</span>
+    </button>
   </header>
 
   <!-- Status / idle state -->
@@ -47,7 +50,7 @@
         <div class="prob-bar-fill" id="prob-bar"></div>
       </div>
       <div class="prob-bar-labels">
-        <span>Ham</span>
+        <span>Legitimate</span>
         <span id="threshold-label">Threshold: 35%</span>
         <span>Spam</span>
       </div>
@@ -67,7 +70,7 @@
     </div>
   </div>
 
-  <!-- ── Emotion Result ── -->
+  <!-- ── Emotion Result — only shown when phishing is detected ── -->
   <div class="emotion-card" id="emotion-card">
     <div class="emotion-header">
       <span class="emotion-card-icon">🧠</span>
