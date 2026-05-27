@@ -16,8 +16,8 @@ import pandas as pd
 import numpy as np
 
 # ── Load & parse ──────────────────────────────────────────────────────────────
-df = pd.read_csv('code/combined_emails_dataset.csv')
-df = df[df['label'] == 'phishing'].copy()
+df = pd.read_csv('code/base_annotations.csv')
+# Do not filter by a separate `label` column — use all rows with an emotion
 df = df.dropna(subset=['emotion'])
 df['emotion_list'] = df['emotion'].str.split('#')
 
@@ -146,7 +146,7 @@ print("=" * 65)
 single_label_pct = (labels_per_sample == 1).mean() * 100
 multi_label_pct  = (labels_per_sample > 1).mean() * 100
 
-print(f"\n  Dataset size       : {N:,} phishing emails")
+print(f"\n  Dataset size       : {N:,} samples")
 print(f"  Emotion classes    : {num_labels}")
 print(f"  Single-label       : {single_label_pct:.1f}%")
 print(f"  Multi-label        : {multi_label_pct:.1f}%")

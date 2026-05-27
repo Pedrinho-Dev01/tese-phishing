@@ -2,7 +2,7 @@
 
 \section{Overview}
 
-To demonstrate the practical utility of the trained models in a real-world context, a full-stack web application named \textit{Gone Phishing} was developed. The application allows users to upload a \texttt{.eml} email file, which is then analysed by the ensemble of fine-tuned transformer models to produce two complementary outputs: a spam/ham classification with confidence scores, and a multi-label emotion detection result characterising the psychological manipulation tactics present in the email.
+To demonstrate the practical utility of the trained models in a real-world context, a full-stack web application named \textit{Gone Phishing} was developed. The application allows users to upload a \texttt{.eml} email file, which is then analyzed by the ensemble of fine-tuned transformer models to produce two complementary outputs: a spam/ham classification with confidence scores, and a multi-label emotion detection result characterising the psychological manipulation tactics present in the email.
 
 The system is composed of two loosely coupled components: a \textbf{backend REST API} built with FastAPI that hosts the model inference pipeline, and a \textbf{frontend single-page application} implemented in vanilla HTML, CSS, and JavaScript that provides an interactive user interface. The backend is deployed as a Hugging Face Space (\texttt{Dpedrinho01/api-host}), while the frontend is served as a static site that communicates with the hosted API. A companion \textbf{Chrome browser extension} extends the same functionality directly into Gmail and Outlook Web, allowing users to scan emails without leaving their inbox.
 

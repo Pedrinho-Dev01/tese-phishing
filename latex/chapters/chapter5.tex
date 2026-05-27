@@ -8,13 +8,13 @@ Unlike the binary phishing detection task in Chapter~4, emotion detection is for
 \section{Emotion Taxonomy Consolidation}
 \label{sec:emotion_taxonomy}
 
-The original annotation schema comprised fifteen emotional categories. Prior to model training, an inter-label co-occurrence analysis was conducted on the annotated corpus to identify clusters of emotions that consistently co-occurred and represented semantically equivalent manipulation vectors. This analysis motivated a principled consolidation from fifteen classes to eight, with the goal of increasing the per-class training signal while preserving meaningful distinctions between manipulation strategies.
+The original annotation schema comprised fourteen emotional categories. Prior to model training, an inter-label co-occurrence analysis was conducted on the annotated corpus to identify clusters of emotions that consistently co-occurred and represented semantically equivalent manipulation vectors. This analysis motivated a principled consolidation from fourteen classes to eight, with the goal of increasing the per-class training signal while preserving meaningful distinctions between manipulation strategies.
 
 Table~\ref{tab:emotion_merging} summarises the mapping from original categories to the consolidated taxonomy.
 
 \begin{table}[htbp]
 \centering
-\caption{Emotion label consolidation: mapping from the original 15-class annotation schema to the 8-class training taxonomy.}
+\caption{Emotion label consolidation: mapping from the original 14-class annotation schema to the 8-class training taxonomy.}
 \label{tab:emotion_merging}
 \begin{tabular}{lll}
 \hline
@@ -61,7 +61,7 @@ For each model (\acs{RoBERTa}-large and \acs{ELECTRA}-large), the following pipe
 \begin{itemize}
 	\item \textbf{Tokenisation:} Emails were tokenised with each model's pretrained tokeniser, padded to fixed length, and truncated at 512 tokens.
 
-	\item \textbf{Multi-label Objective:} The classifier head was configured with \texttt{problem\_type=multi\_label\_classification}. During training, logits were optimised using \texttt{BCEWithLogitsLoss}, and probabilities were obtained at evaluation time using the sigmoid function.
+	\item \textbf{Multi-label Objective:} The classifier head was configured with \texttt{problem\_type=multi\_label\_classification}. During training, logits were optimized using \texttt{BCEWithLogitsLoss}, and probabilities were obtained at evaluation time using the sigmoid function.
 
 	\item \textbf{Class Imbalance Handling:} Because some consolidated classes are less frequent than others, per-class positive weights were computed from the training split as the negative-to-positive ratio. To avoid excessive penalisation of rare classes, a square-root dampening strategy was used and values were clipped to a maximum of 5.0. These \texttt{pos\_weight} values were injected into \texttt{BCEWithLogitsLoss} through a custom weighted trainer.
 
