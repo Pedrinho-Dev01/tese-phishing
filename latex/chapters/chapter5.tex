@@ -1,4 +1,5 @@
 \chapter{Emotion Detection Model}
+\label{chapter:emotion_model}
 
 \section{Model Selection}
 To model the emotional content present in phishing emails, we selected two transformer-based architectures: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electrapretrainingtextencoders}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
@@ -67,7 +68,7 @@ For each model (\acs{RoBERTa}-large and \acs{ELECTRA}-large), the following pipe
 
 	\item \textbf{Model Fine-tuning:} All models were fine-tuned for up to 10 epochs using \acs{AdamW} \cite{loshchilov2019decoupled}, cosine learning-rate scheduling, learning rate $2 \times 10^{-5}$, warmup ratio 0.15, and weight decay 0.01. No label smoothing was applied (factor 0.0), as the multi-label sigmoid objective differs from the cross-entropy setting used for the binary classifiers in Chapter~4. Early stopping (patience = 3) monitored validation macro-F1, with best-checkpoint restoration enabled.
 
-	\item \textbf{Computational Optimisations:} BF16 mixed precision \cite{micikevicius2018mixed} and gradient clipping (max norm 1.0) were used. Unlike the binary spam classifiers, gradient checkpointing was enabled here to accommodate the larger per-sample memory footprint of multi-label training with a 32-sample batch size per device. This trades additional compute for reduced peak GPU memory consumption.
+	\item \textbf{Computational Optimisations:} \ac{BF16} mixed precision \cite{micikevicius2018mixed} and gradient clipping (max norm 1.0) were used. Unlike the binary spam classifiers, gradient checkpointing was enabled here to accommodate the larger per-sample memory footprint of multi-label training with a 32-sample batch size per device. This trades additional compute for reduced peak \ac{GPU} memory consumption.
 
 	\item \textbf{Threshold Tuning:} Since multi-label outputs depend strongly on decision thresholds, threshold optimisation was performed on the validation set after training. Two strategies were evaluated: (i) one global threshold shared by all classes, and (ii) per-class thresholds. Candidate thresholds in the interval [0.10, 0.80] with 0.05 steps were tested to maximise macro-F1.
 

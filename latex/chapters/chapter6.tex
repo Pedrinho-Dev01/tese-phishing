@@ -1,14 +1,15 @@
 \chapter{Web Application}
+\label{chapter:webapp}
 
 \section{Overview}
 
 To demonstrate the practical utility of the trained models in a real-world context, a full-stack web application named \textit{Gone Phishing} was developed. The application allows users to upload a \texttt{.eml} email file, which is then analyzed by the ensemble of fine-tuned transformer models to produce two complementary outputs: a spam/ham classification with confidence scores, and a multi-label emotion detection result characterising the psychological manipulation tactics present in the email.
 
-The system is composed of two loosely coupled components: a \textbf{backend REST API} built with FastAPI that hosts the model inference pipeline, and a \textbf{frontend single-page application} implemented in vanilla HTML, CSS, and JavaScript that provides an interactive user interface. The backend is deployed as a Hugging Face Space (\texttt{Dpedrinho01/api-host}), while the frontend is served as a static site that communicates with the hosted API. A companion \textbf{Chrome browser extension} extends the same functionality directly into Gmail and Outlook Web, allowing users to scan emails without leaving their inbox.
+The system is composed of two loosely coupled components: a \textbf{backend REST API} built with FastAPI that hosts the model inference pipeline, and a \textbf{frontend single-page application} implemented in vanilla \ac{HTML}, CSS, and JavaScript that provides an interactive user interface. The backend is deployed as a Hugging Face Space (\texttt{Dpedrinho01/api-host}), while the frontend is served as a static site that communicates with the hosted \ac{API}. A companion \textbf{Chrome browser extension} extends the same functionality directly into Gmail and Outlook Web, allowing users to scan emails without leaving their inbox.
 
 \section{Application Architecture}
 
-Figure~\ref{fig:webapp_architecture} illustrates the high-level architecture of the system. The user interacts exclusively with the browser-based frontend, which encodes the uploaded \texttt{.eml} file in Base64 and submits it to the \texttt{/predict/eml} endpoint of the FastAPI backend. The backend parses the raw email, extracts its textual content, and routes it through the spam detection ensemble and the emotion detection ensemble in sequence, returning a unified JSON response that the frontend renders as animated visual components.
+Figure~\ref{fig:webapp_architecture} illustrates the high-level architecture of the system. The user interacts exclusively with the browser-based frontend, which encodes the uploaded \texttt{.eml} file in Base64 and submits it to the \texttt{/predict/eml} endpoint of the FastAPI backend. The backend parses the raw email, extracts its textual content, and routes it through the spam detection ensemble and the emotion detection ensemble in sequence, returning a unified \ac{JSON} response that the frontend renders as animated visual components.
 
 \begin{figure}[ht]
     \centering
@@ -19,11 +20,11 @@ Figure~\ref{fig:webapp_architecture} illustrates the high-level architecture of 
 
 \subsection{Backend API}
 
-The backend is implemented in \texttt{api.py} using FastAPI and exposes a set of REST endpoints for spam and emotion classification. All cross-origin requests are permitted via \texttt{CORSMiddleware} to allow the decoupled frontend to communicate freely with the hosted service.
+The backend is implemented in \texttt{api.py} using FastAPI and exposes a set of \ac{REST} endpoints for spam and emotion classification. All cross-origin requests are permitted via \texttt{\ac{CORS}Middleware} to allow the decoupled frontend to communicate freely with the hosted service.
 
 \subsubsection{Model Loading}
 
-On application startup, four transformer model bundles are loaded from the Hugging Face Hub and moved to the available compute device (GPU if present, otherwise CPU):
+On application startup, four transformer model bundles are loaded from the Hugging Face Hub and moved to the available compute device (\ac{GPU} if present, otherwise \ac{CPU}):
 
 \begin{itemize}
     \item \textbf{SpamModelBundle} — wraps a binary sequence classifier (either \acs{RoBERTa}-Large or \acs{ELECTRA}-Large) and reads its calibrated decision threshold from an accompanying \texttt{threshold\_config.json} file stored alongside the model checkpoint. The \texttt{predict\_proba} method tokenises the input text, runs a forward pass, and returns $P(\text{spam})$ via softmax.
@@ -35,7 +36,7 @@ All model inference is performed within \texttt{torch.no\_grad()} context manage
 
 \subsubsection{EML Parsing}
 
-The \texttt{extract\_text\_from\_eml} function uses Python's standard \texttt{email} library to parse raw \texttt{.eml} bytes into a structured message object. The function extracts the \texttt{Subject} and \texttt{From} header fields, then iterates over the message parts to collect \texttt{text/plain} content (preferred) or \texttt{text/html} content as a fallback. HTML content is stripped of tags using a regular expression and decoded with \texttt{html.unescape} before being concatenated into the final input string. Files exceeding 5\,MB are rejected at the API boundary.
+The \texttt{extract\_text\_from\_eml} function uses Python's standard \texttt{email} library to parse raw \texttt{.eml} bytes into a structured message object. The function extracts the \texttt{Subject} and \texttt{From} header fields, then iterates over the message parts to collect \texttt{text/plain} content (preferred) or \texttt{text/html} content as a fallback. \ac{HTML} content is stripped of tags using a regular expression and decoded with \texttt{html.unescape} before being concatenated into the final input string. Files exceeding 5\,MB are rejected at the \ac{API} boundary.
 
 \subsubsection{Ensemble Inference Logic}
 
@@ -67,7 +68,7 @@ POST & \texttt{/predict/batch}   & Batch spam classification for up to 50 text i
 \end{tabular}
 \end{table}
 
-The \texttt{/predict/eml} endpoint is the primary entry point used by the web frontend. It accepts a JSON body containing the filename and Base64-encoded file content, validates the file extension and size, extracts the email text, and returns a \texttt{FullEmlResponse} object combining the \texttt{PredictResponse} (spam result) and \texttt{EmotionPredictResponse} (emotion result).
+The \texttt{/predict/eml} endpoint is the primary entry point used by the web frontend. It accepts a \ac{JSON} body containing the filename and Base64-encoded file content, validates the file extension and size, extracts the email text, and returns a \texttt{FullEmlResponse} object combining the \texttt{PredictResponse} (spam result) and \texttt{EmotionPredictResponse} (emotion result).
 
 \section{Chrome Browser Extension}
 
@@ -75,9 +76,9 @@ In addition to the web frontend, a companion Chrome extension named \textit{Gone
 
 \subsection{Architecture and Integration}
 
-The extension is implemented as a Manifest V3 (MV3) package, consisting of a popup UI (\texttt{popup.html}, \texttt{popup.css}, \texttt{popup.js}) and a minimal content script that serves as a reference extraction helper. The popup handles all logic directly: when the user clicks the toolbar icon and presses \textit{Scan email}, the popup injects a one-off extraction function into the active tab via the \texttt{chrome.scripting.executeScript} API.
+The extension is implemented as a \ac{MV3} package, consisting of a popup UI (\texttt{popup.html}, \texttt{popup.css}, \texttt{popup.js}) and a minimal content script that serves as a reference extraction helper. The popup handles all logic directly: when the user clicks the toolbar icon and presses \textit{Scan email}, the popup injects a one-off extraction function into the active tab via the \texttt{chrome.scripting.executeScript} \ac{API}.
 
-The injected function detects the active email client and extracts the email's subject, sender address, and body from the live DOM. For Gmail it targets the \texttt{.adn.ads} message containers and the \texttt{.a3s.aiL} body element; for Outlook Web it targets the \texttt{[data-testid="message-body"]} selector, with fallbacks for both clients. The extracted text is returned to the popup, which then calls the hosted API directly.
+The injected function detects the active email client and extracts the email's subject, sender address, and body from the live DOM. For Gmail it targets the \texttt{.adn.ads} message containers and the \texttt{.a3s.aiL} body element; for Outlook Web it targets the \texttt{[data-testid="message-body"]} selector, with fallbacks for both clients. The extracted text is returned to the popup, which then calls the hosted \ac{API} directly.
 
 \subsection{API Usage}
 
@@ -96,4 +97,4 @@ The extension popup mirrors the visual design of the main web application, shari
 
 \section{Deployment}
 
-The backend API is hosted as a Hugging Face Space using a Docker runtime, which handles dependency installation from \texttt{requirements.txt} and launches the FastAPI application with Uvicorn. The four model checkpoints are downloaded from the Hugging Face Hub at startup via the \texttt{huggingface\_hub} library and cached within the Space container. The web frontend is served as a static site and communicates with the hosted API endpoint at \texttt{https://dpedrinho01-api-host.hf.space}. The Chrome extension points to the same hosted endpoint and requires no additional infrastructure.
+The backend \ac{API} is hosted as a Hugging Face Space using a Docker runtime, which handles dependency installation from \texttt{requirements.txt} and launches the FastAPI application with Uvicorn. The four model checkpoints are downloaded from the Hugging Face Hub at startup via the \texttt{huggingface\_hub} library and cached within the Space container. The web frontend is served as a static site and communicates with the hosted \ac{API} endpoint at \texttt{https://dpedrinho01-api-host.hf.space}. The Chrome extension points to the same hosted endpoint and requires no additional infrastructure.
