@@ -1,15 +1,15 @@
 \chapter{Dataset Creation and Annotation}
 \label{chapter:dataset}
 
-As established in the previous chapter, machine learning model performance depends on training data quality and representativeness \cite{vapnik1999nature}. This chapter describes the methodology for constructing and annotating a novel dataset for phishing email emotion classification, following established corpus linguistics principles \cite{mcenery2011corpus}.
+As established in the previous chapter, machine learning model performance depends on training data quality and representativeness \cite{vapnik1995nature}. This chapter describes the methodology for constructing and annotating a novel dataset for phishing email emotion classification, following established corpus linguistics principles \cite{mcenery2011corpus}.
 
 \section{Dataset Creation Methodology}
 
 No publicly available datasets exist for fine-grained emotional analysis of phishing emails, necessitating the development of a custom corpus. Following Oxford ``Developing Linguistic Corpora'' guidelines \cite{ota2023guidelines} and TEI principles \cite{tei2023guidelines}, we employed a hybrid approach utilizing an established baseline corpus from \cite{Fernandes2024} as input for systematic LLM-based generation \cite{baroni2009web}.
 
-The baseline corpus contained 480 manually curated email samples with fourteen emotional category annotations, meeting established quality standards \cite{hunston2002corpora}. All samples were pre-validated for structural integrity and consistency, requiring no additional preprocessing.
+The baseline corpus contained 471 manually curated email samples with fourteen emotional category annotations, meeting established quality standards \cite{hunston2002corpora}. All samples were pre-validated for structural integrity and consistency, requiring no additional preprocessing.
 
-LLM-based generation used systematic prompt engineering with few-shot learning principles \cite{brown2020language,wang2023synthetic}. Exemplars from the baseline corpus provided conditioning context for the Ollama LLM to generate additional phishing emails:
+LLM-based generation used systematic prompt engineering with few-shot learning principles \cite{brown2020language,shirazi2023adversarial}. Exemplars from the baseline corpus provided conditioning context for the Ollama LLM to generate additional phishing emails:
 
 \begin{tcolorbox}[colback=gray!10, colframe=gray!60, title={Standardized Prompt Template for LLM-based Generation}]
 \textbf{Prompt Structure:} Based on these examples of emails expressing `\{emotion\}', generate 1 new realistic phishing email that captures the same emotional tone and psychological manipulation strategy. Ensure the generated content maintains professional linguistic coherence while evoking the target emotion of \{emotion\}.
@@ -20,7 +20,7 @@ LLM-based generation used systematic prompt engineering with few-shot learning p
 \end{tcolorbox}
 
 This methodology produced a balanced corpus of 10,000 samples with uniform distribution across fourteen emotional categories ($\sim$
-714 per category). The LLM generation process, conditioned on the baseline corpus exemplars, ensured consistency with established phishing patterns while maintaining emotional category fidelity. The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2018ethics}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}.
+714 per category). The LLM generation process, conditioned on the baseline corpus exemplars, ensured consistency with established phishing patterns while maintaining emotional category fidelity. The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2020practical}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}.
 
 Below is an example of a generated email for the emotion ``Admiration'':
 
@@ -46,20 +46,22 @@ Warmest regards,
 
 \section{Annotation Framework and Guidelines}
 
-We developed a comprehensive annotation framework following established best practices \cite{artstein2017annotation,luedeling2009oxford} to optimize inter-annotator agreement, minimize bias, and establish clear decision criteria for emotional category assignment.
+We developed a comprehensive annotation framework following established best practices \cite{artstein2017annotation,oxford2014corpus} to optimize inter-annotator agreement, minimize bias, and establish clear decision criteria for emotional category assignment.
 
 \subsection{Dataset Preparation}
 
 Before the annotation process could begin, the dataset underwent a few preparation steps to ensure quality and consistency. First, all samples were stripped of any additional text or metadata introduced during LLM generation, retaining only the email content. Next, a substitution process replaced placeholder tokens (e.g., [Recipient], [suspicious link]) with realistic yet non-identifiable values to enhance authenticity and remove any direct identifiers while preserving the overall structure and intent of the emails. Finally, a random shuffle was applied to the dataset to eliminate any ordering biases introduced during generation.
 
+Besides this dataset, another dataset was generated without any emotional labels. This dataset is a non-phishing dataset, and it will be used to train the models in a binary classification setting. This dataset also contains 10,000 samples, and it was generated using the same LLM-based generation methodology described above, but without conditioning on emotional category exemplars. Instead, the prompt simply instructed the LLM to generate realistic non-phishing emails that do not contain any malicious content or deceptive tactics.
+
 \subsection{Annotation Protocol}
 
-The annotation methodology followed four key protocols \cite{fort2011amazon}:
+The annotation methodology followed three key protocols to ensure reliability and consistency across annotators:
 
 \begin{enumerate}
-    \item \textbf{Multi-label Classification:} Annotators could assign multiple emotional labels to single emails, acknowledging that phishing communications often employ mixed emotional appeals \cite{cialdini2021influence}.
+    \item \textbf{Multi-label Classification:} Annotators could assign multiple emotional labels to single emails, acknowledging that phishing communications often employ mixed emotional appeals \cite{cialdini2009influence}.
     
-    \item \textbf{Uncertainty Handling:} When emotional determination was ambiguous, annotators assigned the ``UNSURE'' label to prevent forced categorization \cite{aroyo20truth}.
+    \item \textbf{Uncertainty Handling:} When emotional determination was ambiguous, annotators assigned the ``UNSURE'' label to prevent forced categorization.
     
     \item \textbf{Explicit Confirmation:} Annotators confirmed each annotation before proceeding to ensure deliberate decision-making.
 \end{enumerate}
@@ -68,17 +70,17 @@ The annotation methodology followed four key protocols \cite{fort2011amazon}:
 
 The annotation schema uses a fourteen-category emotional taxonomy that was inherited from the dataset being used. Directly using the taxonomy defined by Plutchik\cite{ekman1992argument, plutchik2001nature} could've been an option, but the original taxonomy was modified to better fit the specific context of phishing emails. The final taxonomy includes the following categories: \textit{Confusion}, \textit{Surprise}, \textit{Joy}, \textit{Admiration}, \textit{Curiosity}, \textit{Desire}, \textit{Anger}, \textit{Excitement}, \textit{Embarrassment}, \textit{Relief}, \textit{Sadness}, \textit{Caring}, \textit{Fear}, \textit{Neutral}, as well as an extra identifier, \textit{UNSURE}, for ambiguous cases. 
 
-Each category was operationally defined with precise criteria and exemplars from phishing communications \cite{mohammad2013crowdsourcing}. The framework balances specificity with annotator reliability, optimized through pilot testing and inter-annotator agreement analysis \cite{artstein2008bias}.
+Each category was operationally defined with precise criteria and exemplars from phishing communications \cite{mohammad2013crowdsourcing}. The framework balances specificity with annotator reliability, optimized through pilot testing and inter-annotator agreement analysis to decrease bias \cite{artstein2005bias}.
 
 \section{Annotation Implementation}
 
-The annotation phase followed established collaborative annotation principles \cite{fort2011amazon}. All generated samples received explicit emotional category labels during the LLM generation process, with each sample labeled based on the emotional category prompt provided to the model. However, comprehensive manual validation was necessary to ensure accuracy and eliminate systematic biases inherent in synthetic generation \cite{wang2023synthetic}.
+The annotation phase followed established collaborative annotation principles \cite{fort2011amazon}. All generated samples received explicit emotional category labels during the LLM generation process, with each sample labeled based on the emotional category prompt provided to the model. However, comprehensive manual validation was necessary to ensure accuracy and eliminate systematic biases inherent in synthetic generation \cite{shirazi2023adversarial}.
 
-The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2018content}. We deployed the Doccano collaborative platform \cite{doccano} on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
+The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2019content}. We deployed the Doccano collaborative platform \cite{doccano} on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
 
 \newpage
 \section{First Annotation Group Results}
-Due to time constraints, only 2,500 samples have been annotated, with statistics provided in Figure \ref{fig:current_annotations}. The current distribution shows a reasonable balance across emotional categories, though some categories (e.g., ``UNSURE'') are underrepresented, likely due to the inherent ambiguity in certain samples. 
+Due to time constraints, only 2,500 samples have been annotated with emotional labels, with statistics provided in Figure \ref{fig:current_annotations}. The current distribution shows a reasonable balance across emotional categories, though some categories (e.g., ``UNSURE'') are underrepresented, likely due to the inherent ambiguity in certain samples. 
 
 \begin{figure}[ht]
     \centering

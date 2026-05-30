@@ -2,7 +2,7 @@
 \label{chapter:emotion_model}
 
 \section{Model Selection}
-To model the emotional content present in phishing emails, we selected two transformer-based architectures: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electrapretrainingtextencoders}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
+To model the emotional content present in phishing emails, we selected two transformer-based architectures: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electra}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
 
 Unlike the binary phishing detection task in Chapter~4, emotion detection is formulated here as a \textbf{multi-label classification} problem: a single phishing email may simultaneously express multiple emotions (e.g., fear and curiosity). This formulation better reflects realistic phishing language, where overlapping emotional manipulation strategies are common.
 
@@ -48,7 +48,7 @@ This consolidation yields a final training taxonomy of \textbf{eight classes}. E
 The label merging was applied programmatically prior to training via a dedicated preprocessing script (\texttt{merge\_labels.py}), which reads the raw annotated corpus and writes the consolidated version to \texttt{combined\_emails\_dataset\_merged.csv}. All training scripts operate on this merged file.
 
 \section{Dataset Preparation}
-The starting point was the combined email dataset used throughout this thesis. For emotion modelling, only emails labelled as \texttt{phishing} were retained, since the objective is to characterise emotional patterns specifically within malicious messages.
+The starting point was the 20,000 combined email dataset used throughout this thesis. For emotion modelling, only emails labelled as \texttt{phishing} were retained, since the objective is to characterise emotional patterns specifically within malicious messages.
 
 Rows without emotion annotation were removed, and the remaining emotion labels were parsed from a delimiter-based format (e.g., \texttt{curiosity\#threat\#warmth}) into sets of class tags reflecting the consolidated taxonomy described in Section~\ref{sec:emotion_taxonomy}. A global emotion vocabulary of eight classes was built from the training corpus, and each email was encoded as a multi-hot vector, where each dimension indicates the presence (1) or absence (0) of a given consolidated emotion.
 

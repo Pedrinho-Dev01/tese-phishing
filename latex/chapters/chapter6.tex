@@ -7,13 +7,20 @@ To demonstrate the practical utility of the trained models in a real-world conte
 
 The system is composed of two loosely coupled components: a \textbf{backend REST API} built with FastAPI that hosts the model inference pipeline, and a \textbf{frontend single-page application} implemented in vanilla \ac{HTML}, CSS, and JavaScript that provides an interactive user interface. The backend is deployed as a Hugging Face Space (\texttt{Dpedrinho01/api-host}), while the frontend is served as a static site that communicates with the hosted \ac{API}. A companion \textbf{Chrome browser extension} extends the same functionality directly into Gmail and Outlook Web, allowing users to scan emails without leaving their inbox.
 
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figs/webapp_showcase.png}
+    \caption{Screenshot of the Gone Phishing web application.}
+    \label{fig:webapp_showcase}
+\end{figure}
+
 \section{Application Architecture}
 
 Figure~\ref{fig:webapp_architecture} illustrates the high-level architecture of the system. The user interacts exclusively with the browser-based frontend, which encodes the uploaded \texttt{.eml} file in Base64 and submits it to the \texttt{/predict/eml} endpoint of the FastAPI backend. The backend parses the raw email, extracts its textual content, and routes it through the spam detection ensemble and the emotion detection ensemble in sequence, returning a unified \ac{JSON} response that the frontend renders as animated visual components.
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.85\textwidth]{figs/webapp_architecture.png}
+    \includegraphics[width=0.75\textwidth]{figs/webapp_architecture.png}
     \caption{High-level architecture of the Gone Phishing web application. The browser-based frontend communicates with the FastAPI backend over HTTPS, which orchestrates inference across four transformer models.}
     \label{fig:webapp_architecture}
 \end{figure}
@@ -94,6 +101,13 @@ This approach avoids the overhead of Base64 encoding an \texttt{.eml} file, sinc
 \subsection{User Interface}
 
 The extension popup mirrors the visual design of the main web application, sharing the same dark aesthetic, typography, and animated probability bars. Spam results are displayed with the same three-tier verdict (ham, maybe spam, spam) and per-model breakdowns for both \acs{RoBERTa}-Large and \acs{ELECTRA}-Large. Detected emotions are shown as labelled chips with a bar chart of per-class probabilities. If no email is open in the active tab, the popup displays an idle state prompting the user to open an email before scanning.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.55\textwidth]{figs/extension_showcase.png}
+    \caption{Showcase of the Gone Phishing Chrome extension in action.}
+    \label{fig:extension_showcase}
+\end{figure}
 
 \section{Deployment}
 
