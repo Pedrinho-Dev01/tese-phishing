@@ -39,7 +39,7 @@ Table~\ref{tab:emotion_merging} summarises the mapping from original categories 
 
 The three merged clusters were motivated by concrete empirical and semantic criteria. The \texttt{positive\_arousal} cluster groups emotions that all serve the same attacker goal: inducing a positive affective state in the victim to lower critical thinking and prompt impulsive action. Co-occurrence rates between any two members of this cluster ranged from 43\% to 60\%, indicating that annotators overwhelmingly labelled these emotions together rather than in isolation. The \texttt{warmth} cluster consolidates the trust-building manipulation tactics that phishing attackers use to establish rapport before delivering a malicious request; admiration, gratitude, and caring rarely appeared without one another in the corpus. The \texttt{threat} cluster is motivated by the strongest empirical signal: 79\% of samples labelled with anger also carried a fear label, and both emotions serve the same intimidation and coercion function within phishing messages.
 
-Four categories were retained as independent classes because each represents a genuinely distinct manipulation tactic with a unique psychological profile and no significant co-occurrence with other classes: \texttt{curiosity} (exploiting information-seeking behaviour), \texttt{confusion} (disorienting the victim to reduce scrutiny), \texttt{sadness} (guilt-induction and empathy exploitation), and \texttt{relief} (offering resolution of a fabricated threat to prompt compliance).
+Four categories were retained as independent classes because each represents a genuinely distinct manipulation tactic with a unique psychological profile and no significant co-occurrence with other classes: \texttt{curiosity} (exploiting information-seeking behavior), \texttt{confusion} (disorienting the victim to reduce scrutiny), \texttt{sadness} (guilt-induction and empathy exploitation), and \texttt{relief} (offering resolution of a fabricated threat to prompt compliance).
 
 The \texttt{neutral} and \texttt{unsure} labels were dropped entirely. Their combined sample count (262 instances) was insufficient to provide reliable training signal, and \texttt{unsure} is an annotation artefact that reflects annotator uncertainty rather than a phishing manipulation strategy.
 
@@ -55,12 +55,12 @@ Rows without emotion annotation were removed, and the remaining emotion labels w
 To preserve label distribution during splitting, a stratification proxy was used: for each sample, the index of its dominant label (\texttt{argmax} over the multi-hot vector) served as the stratification target. Data was split into test (20\%) and train (80\%), followed by a validation split (10\% of train), resulting in approximately 72\%/8\%/20\% train/validation/test partitions, with a fixed random seed for reproducibility.
 
 \section{Model Implementation}
-Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenisation, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
+Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenization, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
 
 For each model (\acs{RoBERTa}-large and \acs{ELECTRA}-large), the following pipeline was applied:
 
 \begin{itemize}
-	\item \textbf{Tokenisation:} Emails were tokenised with each model's pretrained tokeniser, padded to fixed length, and truncated at 512 tokens.
+	\item \textbf{tokenization:} Emails were tokenised with each model's pretrained tokeniser, padded to fixed length, and truncated at 512 tokens.
 
 	\item \textbf{Multi-label Objective:} The classifier head was configured with \texttt{problem\_type=multi\_label\_classification}. During training, logits were optimized using \texttt{BCEWithLogitsLoss}, and probabilities were obtained at evaluation time using the sigmoid function.
 
