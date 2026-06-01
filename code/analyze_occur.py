@@ -16,7 +16,7 @@ import pandas as pd
 import numpy as np
 
 # ── Load & parse ──────────────────────────────────────────────────────────────
-df = pd.read_csv('code/generated_10k_emails.csv')
+df = pd.read_csv('code/current_dataset_2.csv')
 # Do not filter by a separate `label` column — use all rows with an emotion
 df = df.dropna(subset=['emotion'])
 df['emotion_list'] = df['emotion'].str.split('#')

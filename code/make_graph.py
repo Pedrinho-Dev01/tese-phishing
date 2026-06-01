@@ -24,6 +24,15 @@ def parse_labels(raw_label):
 	return [part.strip().lower() for part in parts if str(part).strip()]
 
 
+def extract_labels(row):
+	"""Return labels from the first matching field in a dataset row."""
+	for field_name in ("emotion", "label", "Comments"):
+		labels = parse_labels(row.get(field_name))
+		if labels:
+			return labels
+	return []
+
+
 def count_emotions(dataset_path):
 	with dataset_path.open("r", encoding="utf-8") as f:
 		data = json.load(f)
@@ -38,7 +47,7 @@ def count_emotions(dataset_path):
 		if not isinstance(row, dict):
 			continue
 
-		labels = parse_labels(row.get("label"))
+		labels = extract_labels(row)
 		if not labels:
 			missing_label_rows += 1
 			continue
@@ -97,8 +106,8 @@ def build_parser():
 	parser.add_argument(
 		"--dataset",
 		type=Path,
-		default=Path(__file__).with_name("current_dataset.json"),
-		help="Path to dataset JSON file (default: code/current_dataset.json).",
+		default=Path(__file__).with_name("current_dataset_2.json"),
+		help="Path to dataset JSON file (default: code/current_dataset_2.json).",
 	)
 	parser.add_argument(
 		"--output-image",

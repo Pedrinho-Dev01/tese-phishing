@@ -80,13 +80,26 @@ The corpus scale (10,000 samples) required multi-annotator processing to enhance
 
 \newpage
 \section{First Annotation Group Results}
-Due to time constraints, only 2,500 samples have been annotated with emotional labels, with statistics provided in Figure \ref{fig:current_annotations}. The current distribution shows a reasonable balance across emotional categories, though some categories (e.g., ``UNSURE'') are underrepresented, likely due to the inherent ambiguity in certain samples. 
+Due to time constraints, only 2,500 samples have been annotated with emotional labels, with statistics provided in Figure \ref{fig:annotation_round_1}. The current distribution shows a reasonable balance across emotional categories, though some categories (e.g., ``UNSURE'') are underrepresented, likely due to the inherent ambiguity in certain samples. 
 
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.85\textwidth]{figs/current_annotations.png}
+    \includegraphics[width=0.85\textwidth]{figs/annotation_round_1.png}
     \caption{Annotation statistics based on 2,500 completed annotations.}
-    \label{fig:current_annotations}
+    \label{fig:annotation_round_1}
 \end{figure}
 
 \section{Second Annotation Group Results}
+
+The distribution of emotional categories in the second annotation group is shown in Figure \ref{fig:annotation_round_2}. The distribution rougly follows the same pattern as the first annotation group, with some categories being more prevalent than others. The ``UNSURE'' category is still underrepresented, which indicates that annotators are generally confident in their emotional classifications.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figs/annotation_round_2.png}
+    \caption{Annotation statistics based on 2,500 completed annotations.}
+    \label{fig:annotation_round_2}
+\end{figure}
+
+\section{Inter-Annotator Agreement Analysis}
+
+To assess the reliability of our annotations, we calculated inter-annotator agreement (IAA) metrics using Cohen's Kappa \cite{cohen1960coefficient} and Krippendorff's Alpha \cite{krippendorff2011computing}. 
