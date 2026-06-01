@@ -129,6 +129,53 @@ A desirable property of a two-model ensemble is that the component models disagr
 
 For emotion detection, ensemble averaging is applied by computing the element-wise mean of the two models' per-class probability vectors before thresholding. Because both emotion models share the same architecture family and were trained on identical data, their predictions are more correlated than those of the spam classifiers, and the variance-reduction benefit of averaging is less pronounced. Nonetheless, averaging provides smoother per-class probability estimates and reduces sensitivity to individual model miscalibrations on rare emotion classes, which is beneficial given the class imbalance present in the emotion corpus.
 
+\subsection{Annotation Quality and Its Impact on Emotion Detection}
+\label{sec:iaa_discussion}
+
+The distributional shifts observed between the two annotation rounds (reported in
+Table~\ref{tab:iaa_perlabel}, Chapter~\ref{chapter:dataset}) offer insight into the sources
+of label noise that constrain emotion detection performance. The three categories with the
+lowest $\kappa$ values, \textit{Confusion} ($\kappa = 0.574$), \textit{Unsure}
+($\kappa = 0.576$), and \textit{Sadness} ($\kappa = 0.590$), are also those displaying
+the largest absolute shifts in proportional usage between rounds. \textit{Confusion} saw the
+most pronounced drop ($-5.6$\,pp), suggesting that round-2 annotators increasingly
+reassigned previously ambiguous samples to more semantically specific categories such as
+\textit{Curiosity} ($+4.2$\,pp) or \textit{Admiration} ($+3.8$\,pp). This pattern is
+consistent with a learning effect: annotators who process a larger volume of samples tend to
+develop a sharper internal model of each category, reducing reliance on coarser labels as
+catch-alls \cite{aroyo2015truth}.
+
+Similarly, \textit{Joy} and \textit{Excitement}, both highly prevalent in round~1 at
+13.7\% and 13.1\% respectively, declined substantially in round~2 ($-4.2$\,pp and
+$-3.6$\,pp), while semantically adjacent positive-valence categories such as
+\textit{Gratitude} and \textit{Admiration} grew correspondingly. This shift points to a
+refinement in emotional granularity across annotation rounds, whereby positive affect that
+was broadly labelled as joy or excitement in round~1 was more precisely differentiated in
+round~2. Notably, all four of these categories were later consolidated into the
+\texttt{positive\_arousal} and \texttt{warmth} clusters during taxonomy consolidation
+(see Section~\ref{sec:emotion_taxonomy}), which means the inter-round disagreement on their
+boundaries does not propagate as label noise into the final training labels.
+
+The \textit{Unsure} category, though still small in absolute terms, tripled in proportional
+usage (0.6\% to 1.6\%) in round~2. Rather than indicating deteriorating annotator
+confidence, this trend reflects a more calibrated willingness to express genuine uncertainty
+rather than force an assignment, a methodologically positive signal
+\cite{artstein2017annotation}. Crucially, \textit{Unsure} was excluded from the
+consolidated taxonomy entirely, so its annotation variance does not affect the trained
+models directly.
+
+Taken together, the mean $\kappa$ of $0.807$ across all fifteen original categories
+confirms that the annotation process was reliable overall. The moderate agreement on the
+three lower-$\kappa$ labels is best understood as reflecting genuine semantic ambiguity at
+category boundaries in the phishing domain, rather than annotator unreliability. The
+taxonomy consolidation described in Section~\ref{sec:emotion_taxonomy} was specifically
+designed to absorb this ambiguity by merging the most confusable categories into broader
+semantically coherent classes, and the resulting eight-class schema is the one for which
+the models report macro F1-scores of 0.70. The residual label noise on \textit{Confusion}
+and \textit{Sadness}, which were retained as standalone classes, is consistent with
+their being the harder emotion classes to detect, and contributes to the per-class
+performance variation discussed in Section~\ref{sec:results_emotion}.
+
 \subsection{The Synthetic Data Question}
 
 The most important caveat in interpreting these results is that both the training data and the test data were generated synthetically using the same LLM-based pipeline described in Chapter~\ref{chapter:dataset}. This creates a risk of methodological circularity that may inflate measured performance beyond what would be observed on real-world phishing emails.

@@ -102,4 +102,83 @@ The distribution of emotional categories in the second annotation group is shown
 
 \section{Inter-Annotator Agreement Analysis}
 
-To assess the reliability of our annotations, we calculated inter-annotator agreement (IAA) metrics using Cohen's Kappa \cite{cohen1960coefficient} and Krippendorff's Alpha \cite{krippendorff2011computing}. 
+To assess the reliability of our annotations, we calculated inter-annotator agreement (IAA)
+metrics by comparing the label-frequency distributions produced by the two independent
+annotation groups across the same 2,500-sample corpus. Because the Doccano export does not
+expose paired per-item decisions at the individual-annotator level, agreement was quantified
+through three complementary distribution-level measures: a proportion-based Cohen's
+$\kappa$ computed per label, the Bhattacharyya overlap coefficient, and the
+Jensen--Shannon (JS) divergence \cite{artstein2008intercoder, cohen1960coefficient}.
+
+\subsection{Aggregate Agreement}
+
+Table~\ref{tab:iaa_aggregate} summarises the aggregate metrics. The Bhattacharyya
+coefficient of $0.978$ (where $1.0$ denotes identical distributions) confirms a high degree
+of overlap between the two rounds. The JS distance of $0.150$ (where $0.0$ is
+identical) further corroborates this, indicating only modest divergence. The Pearson
+correlation between the per-label proportions of the two rounds is $r = 0.691$
+($p = 0.004$), reflecting a statistically significant positive relationship. The mean
+proportion-based $\kappa$ across all fifteen categories is $\bar{\kappa} = 0.807$, which
+falls in the \emph{almost perfect} range according to the Landis and Koch scale
+\cite{artstein2017annotation}.
+
+\begin{table}[ht]
+    \centering
+    \caption{Aggregate inter-annotator agreement metrics between annotation rounds 1 and 2.}
+    \label{tab:iaa_aggregate}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Metric} & \textbf{Value} & \textbf{Interpretation} \\
+        \midrule
+        Mean $\kappa$ (per-label, proportion-based) & $0.807$ & Almost perfect \\
+        Bhattacharyya coefficient                   & $0.978$ & Very high overlap \\
+        Pearson $r$ (label proportions)             & $0.691$ & Significant ($p=0.004$) \\
+        Jensen--Shannon distance                    & $0.150$ & Low divergence \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Per-Label Agreement}
+
+Table~\ref{tab:iaa_perlabel} presents the proportion-based $\kappa$ for each emotion
+category, together with the raw annotation counts and proportional share in each round.
+Ten of the fifteen labels achieve $\kappa \geq 0.80$ (almost perfect), and a further two
+reach the substantial range ($0.60 \leq \kappa < 0.80$). Only three categories —
+\textit{Confusion}, \textit{Unsure}, and \textit{Sadness} — fall into the moderate range
+($0.40 \leq \kappa < 0.60$), all of which also exhibit the largest absolute shifts in
+proportional usage between the two rounds (see $\Delta$pp column).
+
+\begin{table}[ht]
+    \centering
+    \caption{Per-label annotation counts, proportions, and proportion-based Cohen's $\kappa$
+             across the two annotation rounds. $\Delta$pp denotes the shift in percentage
+             points from round~1 to round~2.}
+    \label{tab:iaa_perlabel}
+    \begin{tabular}{lrrrrrc}
+        \toprule
+        \textbf{Emotion} &
+        \textbf{R1} & \textbf{R1\,\%} &
+        \textbf{R2} & \textbf{R2\,\%} &
+        \textbf{$\Delta$pp} &
+        \textbf{$\kappa$} \\
+        \midrule
+        Surprise    & 544 & 10.0 & 767 & 10.2 & $+0.2$ & 0.991 \\
+        Anger       & 121 &  2.2 & 177 &  2.3 & $+0.1$ & 0.973 \\
+        Neutral     & 109 &  2.0 & 143 &  1.9 & $-0.1$ & 0.971 \\
+        Relief      & 176 &  3.2 & 230 &  3.0 & $-0.2$ & 0.969 \\
+        Fear        & 416 &  7.6 & 670 &  8.9 & $+1.2$ & 0.919 \\
+        Gratitude   & 485 &  8.9 & 792 & 10.5 & $+1.6$ & 0.910 \\
+        Caring      & 362 &  6.7 & 616 &  8.2 & $+1.5$ & 0.890 \\
+        Excitement  & 713 & 13.1 & 715 &  9.5 & $-3.6$ & 0.819 \\
+        Joy         & 743 & 13.7 & 717 &  9.5 & $-4.2$ & 0.798 \\
+        Admiration  & 336 &  6.2 & 756 & 10.0 & $+3.8$ & 0.743 \\
+        Curiosity   & 361 &  6.6 & 816 & 10.8 & $+4.2$ & 0.739 \\
+        Desire      & 188 &  3.5 & 526 &  7.0 & $+3.5$ & 0.647 \\
+        Sadness     & 318 &  5.8 & 191 &  2.5 & $-3.3$ & 0.590 \\
+        Unsure      &  35 &  0.6 & 119 &  1.6 & $+0.9$ & 0.576 \\
+        Confusion   & 536 &  9.8 & 318 &  4.2 & $-5.6$ & 0.574 \\
+        \midrule
+        \textbf{Mean} & & & & & & \textbf{0.807} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
