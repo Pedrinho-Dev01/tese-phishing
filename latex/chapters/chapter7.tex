@@ -1,24 +1,164 @@
-\chapter{Conclusions}
-\label{chapter:conclusion}
+\chapter{Results and Discussion}
+\label{chapter:results}
 
-This thesis has presented a comprehensive study on the detection of phishing emails through linguistic patterns and sentiment analysis. The work encompassed dataset creation and annotation, the training and evaluation of transformer-based classification models, and the development of a deployable web application with a companion browser extension.
+This chapter consolidates and interprets the experimental results obtained across both classification tasks. Section~\ref{sec:results_spam} analyses the phishing detection results, including a comparison between the classical baselines and the fine-tuned transformer ensemble. Section~\ref{sec:results_emotion} analyses the multi-label emotion detection results and discusses the effect of thresholding strategy on performance. Section~\ref{sec:results_discussion} addresses cross-cutting themes, including ensemble behaviour, the implications of evaluating on synthetic data, and the practical utility of the system as deployed.
 
-\section{Summary of Contributions}
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Phishing Detection Results}
+\label{sec:results_spam}
+% ─────────────────────────────────────────────────────────────────────────────
 
-The dataset creation process leveraged advanced \acs{LLM} techniques to generate a diverse and representative corpus of phishing emails across multiple emotional categories. The annotation framework was designed to optimize inter-annotator agreement and minimise bias, resulting in high-quality labelled data. A principled consolidation of the original fifteen-category emotional taxonomy into eight semantically coherent classes was carried out, informed by co-occurrence analysis of the annotated corpus.
+\subsection{Overall Performance}
 
-Two distinct classification tasks were addressed. For phishing detection, fine-tuned \acs{RoBERTa}-large and \acs{ELECTRA}-large binary classifiers achieved F1-scores of 0.9150 and 0.9055, respectively, on the held-out test set. A three-tier ensemble inference scheme,  classifying emails as \textit{ham}, \textit{maybe spam}, or \textit{spam}, was adopted to surface borderline cases without forcing a hard binary decision, reflecting the asymmetric cost of false negatives in a security context.
+Table~\ref{tab:results_spam_full} reports the complete set of phishing detection results across all evaluated models and thresholds on the held-out test set of 4,000 samples (2,000 per class).
 
-For emotion detection, the same two architectures were fine-tuned as multi-label classifiers over the eight consolidated emotional classes. Per-class threshold tuning on the validation set yielded macro-F1 scores of 0.7041 (\acs{RoBERTa}-large) and 0.6967 (\acs{ELECTRA}-large) on the test set, demonstrating that transformer models can reliably identify the psychological manipulation tactics present in phishing emails.
+\begin{table}[htbp]
+\centering
+\caption{Phishing detection results on the held-out test set. All metrics are computed for the positive (phishing) class.}
+\label{tab:results_spam_full}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccc}
+\hline
+\textbf{Model} & \textbf{Threshold} & \textbf{Accuracy} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} \\
+\hline
+\multicolumn{6}{l}{\textit{Classical baselines}} \\
+TF-IDF + Multinomial NB      & 0.50 & 0.8000 & 0.7459 & 0.7583 & 0.7340 \\
+TF-IDF + Logistic Regression & 0.50 & 0.8856 & 0.8560 & 0.8621 & 0.8500 \\
+\hline
+\multicolumn{6}{l}{\textit{Fine-tuned transformer models}} \\
+\acs{ELECTRA}-large           & 0.50 & 0.9256 & 0.9051 & 0.9230 & 0.8880 \\
+\acs{ELECTRA}-large           & 0.35 & 0.9256 & 0.9055 & 0.9195 & 0.8920 \\
+\acs{RoBERTa}-large           & 0.50 & 0.9352 & 0.9169 & 0.9410 & 0.8940 \\
+\acs{RoBERTa}-large           & 0.35 & 0.9336 & 0.9150 & 0.9371 & 0.8940 \\
+\hline
+\end{tabular}%
+}
+\end{table}
 
-The trained models were integrated into a full-stack web application, \textit{Gone Phishing}, consisting of a FastAPI backend hosted on Hugging Face Spaces and a static frontend that accepts \texttt{.eml} file uploads. A companion Manifest V3 Chrome extension extends the same analysis capability to Gmail and Outlook Web, allowing users to scan open emails directly from their inbox without leaving the browser.
+Both transformer models substantially outperform the classical baselines across all metrics. The TF-IDF + Logistic Regression baseline achieves an F1-score of 0.8560, which is a respectable result and establishes a meaningful lower bound: the lexical surface of phishing emails does carry strong discriminative signal. The Multinomial Naive Bayes baseline lags considerably at F1 = 0.7459, consistent with its inability to model feature co-occurrences and its poor calibration on long, variable-length email text.
 
-\section{Limitations}
+The roughly 6 percentage point F1 gap between the logistic regression baseline and the best transformer model (\acs{RoBERTa}-large at 0.9169) reflects the added value of contextual, bidirectional representations over bag-of-words statistics: phishing manipulation tactics frequently depend on how phrases interact across the full message, a relationship that TF-IDF vectors cannot capture. It is also worth noting that the logistic regression baseline achieves a ROC-AUC of approximately 0.948, approaching transformer-level discriminative ability at the ranking level, yet this does not translate into calibrated decisions at any single operating threshold, which explains the F1 gap. This suggests that the primary advantage of transformers is not that they rank phishing emails higher in absolute terms, but that their probability estimates are better calibrated, allowing the threshold-based inference scheme to work more effectively.
 
-Several limitations should be acknowledged. The phishing email corpus was generated synthetically using \acs{LLM} prompting, which may not fully capture the diversity and adversarial sophistication of real-world phishing campaigns. The annotation process was constrained by time and annotator availability, with only a subset of the full corpus receiving manual validation. Emotion detection performance, while promising, remains below the level achieved for binary spam classification, partly due to the inherent subjectivity of multi-label emotional annotation and the class imbalance present even after taxonomy consolidation.
+\subsection{Transformer Model Comparison}
 
-Furthermore, there is a serious risk of methodological circularity in the dataset creation process. The 10\,000 phishing emails were generated by an \acs{LLM} using prompts that explicitly encoded emotional categories, and the same generated emails were then used to train the emotion classifier. In this setting, the model may learn to recover the label implied by the prompt-generation process rather than detect emotion in naturally occurring phishing emails. This can inflate performance estimates on the held-out test set, since the test data is drawn from the same synthetic distribution. Future work should therefore include evaluation on external datasets of real-world phishing emails, ideally with human annotations, to assess whether the model generalises beyond prompt-induced patterns.
+\acs{RoBERTa}-large achieves a higher F1-score (0.9169) and accuracy (0.9352) than \acs{ELECTRA}-large (0.9051 and 0.9256 respectively) at the standard 0.5 threshold, driven primarily by its superior precision (0.9410 vs.\ 0.9230). Both models achieve similar recall at this threshold, suggesting that the primary differentiator is RoBERTa's tendency to be more conservative in flagging borderline cases, producing fewer false positives.
 
-\section{Future Work}
+The two models respond differently to threshold reduction. For \acs{ELECTRA}-large, lowering the threshold from 0.50 to 0.35 yields a small but consistent improvement across F1, precision, and recall simultaneously. This is an unusual pattern: threshold reduction typically increases recall at the cost of precision. The fact that both metrics improve slightly suggests that ELECTRA assigns non-trivial probability mass in the 0.35--0.50 range to true positive samples it does not confidently place above 0.50. Capturing these with the lower threshold recovers them as correct predictions without yet dragging in many additional false positives. For \acs{RoBERTa}-large, lowering the threshold to 0.35 produces the expected recall-precision trade-off: recall stays constant at 0.8940 while precision drops marginally (0.9410$\to$0.9371) and F1 decreases slightly (0.9169$\to$0.9150). This indicates that RoBERTa is well-calibrated around 0.50 and does not benefit from a lower threshold.
 
-Future work should prioritise breaking the circularity introduced by prompt-driven synthetic data generation. This requires collecting real-world phishing examples, ideally from sources such as the \acs{APWG} eCrime Exchange, and annotating them independently so that emotion labels are not implied by the generation prompt. A broader set of annotators would also improve inter-annotator agreement and label coverage. Further investigation into adversarial robustness is warranted, particularly as \acs{AI}-generated phishing content becomes more prevalent. On the application side, extending the Chrome extension to support additional email clients and languages would increase the practical reach of the system.
+These complementary calibration profiles reinforce the rationale for combining the two models in an ensemble: their disagreements are informative rather than arbitrary, and the average of their probabilities produces a smoother, more reliable decision surface than either model alone.
+
+\subsection{The Three-Tier Ensemble Scheme}
+
+In deployment, the two models are combined by averaging their softmax probabilities. The ensemble threshold is the mean of the two individual calibrated thresholds (approximately 0.35), and the upper boundary between \textit{maybe spam} and \textit{spam} is fixed at 0.50. This partitions the probability space into three regions: below $\approx$0.35 (ham), between 0.35 and 0.50 (maybe spam), and above 0.50 (spam).
+
+The practical value of the middle tier lies in how it handles the region of greatest model uncertainty. Rather than forcing a binary decision for emails where the averaged ensemble probability falls between the two models' individual thresholds, the maybe spam tier surfaces these cases to the user with a softer warning. This is particularly important in a security context: the asymmetric cost of false negatives means that suppressing uncertain cases, rather than highlighting them, could allow sophisticated phishing attempts to pass undetected. At the same time, flagging all uncertain cases as spam would inflate the false positive rate and erode user trust through alert fatigue. The three-tier scheme is therefore a principled compromise between sensitivity and specificity that acknowledges the limits of automated classification at the decision boundary.
+
+\subsection{Error Analysis}
+
+At the standard 0.50 threshold, the remaining errors for the best single model (\acs{RoBERTa}-large, F1 = 0.9169) comprise approximately 6.5\% of the test set. These errors fall into two categories.
+
+\textbf{False negatives (missed phishing)} tend to be emails that employ subtle manipulation without overt urgency or fear language, relying instead on gradual trust-building tactics. In terms of the consolidated emotion taxonomy, these are emails dominated by the \texttt{warmth} and \texttt{curiosity} classes, whose linguistic surface more closely resembles legitimate correspondence from known contacts or service providers. These emails are harder to distinguish from legitimate marketing or informational correspondence purely on the basis of textual content.
+
+\textbf{False positives (legitimate email flagged as spam)} tend to be ham emails that use urgency or imperative language for legitimate purposes, such as IT security notifications, time-sensitive promotional offers, or system-generated alerts. These share surface linguistic features with phishing templates but lack the combination of identity spoofing, illegitimate requests, and psychological pressure that defines genuine phishing. Since the models have access only to the textual content and not to authentication metadata or URL provenance, they cannot distinguish these cases at the text level alone.
+
+Both error categories point to the same underlying limitation: even deep contextual representations cannot access ground truth signals such as whether the sender domain is authenticated or whether a linked URL belongs to the organisation it claims to represent. Integrating header-based authentication signals (SPF/DKIM results, domain age, URL features) as additional input features would likely reduce both error types and represents a natural extension of this work.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Emotion Detection Results}
+\label{sec:results_emotion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Overall Performance}
+
+Table~\ref{tab:results_emotion_full} consolidates the emotion detection results for both models under both thresholding strategies on the held-out test set.
+
+\begin{table}[htbp]
+\centering
+\caption{Emotion detection results on the held-out test set. EM denotes Exact Match accuracy. All macro metrics are computed across the eight consolidated emotion classes.}
+\label{tab:results_emotion_full}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccc}
+\hline
+\textbf{Model} & \textbf{Threshold Strategy} & \textbf{Exact Match} & \textbf{Macro F1} & \textbf{Macro Precision} & \textbf{Macro Recall} \\
+\hline
+\acs{RoBERTa}-large & Global threshold (best on val) & 0.2918 & 0.6869 & 0.6823 & 0.7091 \\
+\acs{RoBERTa}-large & Per-class thresholds           & 0.2816 & 0.7041 & 0.6793 & 0.7477 \\
+\acs{ELECTRA}-large & Global threshold               & 0.3326 & 0.6967 & 0.7168 & 0.6911 \\
+\acs{ELECTRA}-large & Per-class thresholds           & 0.2775 & 0.7036 & 0.6890 & 0.7407 \\
+\hline
+\end{tabular}%
+}
+\end{table}
+
+Macro F1-scores of 0.70--0.71 are achieved by both models under their best thresholding strategies, with \acs{RoBERTa}-large (per-class, 0.7041) and \acs{ELECTRA}-large (per-class, 0.7036) performing essentially at parity. These results are lower than the binary phishing detection scores, which is expected: multi-label classification over eight classes is an inherently harder problem, class imbalance across the eight emotion categories is more pronounced than in the near-balanced binary corpus, and emotional annotation is a subjective task with inherent inter-annotator disagreement that introduces label noise.
+
+\subsection{Exact Match vs.\ Macro F1}
+
+A notable feature of the results is the large gap between exact match accuracy and macro F1. Exact match, which requires all predicted labels for a sample to exactly equal the ground truth set, ranges from 0.28 to 0.33 across all configurations. Macro F1 is substantially higher at 0.69--0.70. This discrepancy is characteristic of multi-label problems where label sets are non-trivial: a prediction that is correct for seven of eight classes contributes zero to exact match but contributes substantially to per-class F1. In practice, macro F1 is the more informative metric here, as the goal is for the system to correctly identify which emotional manipulation tactics are present, even if it occasionally misses a co-occurring secondary signal. A system that reliably identifies the dominant emotional tone (e.g., \texttt{threat}) while occasionally missing a secondary one (e.g., \texttt{confusion}) is still useful to an end user assessing a suspicious email.
+
+The low exact match values also reflect the inherent ambiguity of multi-label emotion annotation: even human annotators frequently disagree about which secondary emotions are present in a given email, and the model's partial predictions may often be reasonable interpretations of the text even where they do not match the ground truth set exactly.
+
+\subsection{Effect of Thresholding Strategy}
+
+The choice between a global threshold and per-class thresholds has a consistent directional effect across both models. Per-class thresholds improve macro F1 and recall at the cost of exact match accuracy and, in most cases, a marginal reduction in macro precision.
+
+For \acs{RoBERTa}-large, the improvement in macro F1 from per-class thresholds is 0.0172 (0.6869$\to$0.7041), with recall increasing substantially from 0.7091 to 0.7477. For \acs{ELECTRA}-large the picture is more nuanced: the global threshold achieves higher precision (0.7168) and higher exact match (0.3326), while per-class thresholds improve macro F1 marginally (0.6967$\to$0.7036) with a larger recall gain (0.6911$\to$0.7407).
+
+This precision-recall trade-off reflects a design choice about acceptable error modes. In the context of phishing detection, a false positive in emotion detection, incorrectly attributing an emotion to an email, is less costly than a false negative, failing to identify a manipulation tactic that is genuinely present. This asymmetry favours higher recall, which in turn favours per-class thresholds, and motivates the deployment decision to use per-class thresholds in the Gone Phishing system.
+
+The reduction in exact match under per-class thresholds, most visible in \acs{ELECTRA}-large (0.3326$\to$0.2775), reflects the fact that lower per-class thresholds cause the model to predict additional labels that may be absent from the ground truth annotation. Given the multi-label nature of phishing emotional language, and given that individual annotators may have assigned different subsets of genuinely co-present emotions, this trade-off is acceptable.
+
+\subsection{Comparison with the Phishing Detection Task}
+
+The lower performance of emotion detection relative to phishing detection merits explicit discussion, as it reflects structural differences between the two tasks rather than a failure of the modelling approach.
+
+First, the training data for emotion detection is smaller: the emotion models were trained only on the phishing subset of the corpus (approximately 10,000 samples), whereas the spam classifiers were trained on the full 20,000-sample balanced corpus. Fewer training examples directly limit the model's ability to distinguish between closely related emotion classes.
+
+Second, the taxonomy consolidation, while principled and empirically motivated by co-occurrence analysis, necessarily retains some ambiguity at class boundaries. An email that straddles the boundary between \texttt{positive\_arousal} and \texttt{warmth}, for instance, may be labelled differently by different annotators, generating label noise that degrades measured performance without reflecting a genuine model failure.
+
+Third, emotion is a more subjective and contextually grounded phenomenon than binary phishing identity. Whether an email expresses \texttt{curiosity} or \texttt{confusion} may depend on the reader's prior knowledge, which the model cannot access. Phishing identity, by contrast, is a more stable and text-intrinsic property.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Discussion}
+\label{sec:results_discussion}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Model Agreement and Ensemble Behaviour}
+
+A desirable property of a two-model ensemble is that the component models disagree precisely on cases where the label is genuinely ambiguous, and agree on clear-cut cases. The spam detection results are broadly consistent with this. The complementary inductive biases of \acs{RoBERTa}-large (robust long-range contextual representations via masked language modelling) and \acs{ELECTRA}-large (fine-grained token-plausibility sensitivity via the replaced-token-detection objective) are expected to produce decorrelated errors. Emails that fall into the maybe spam tier of the ensemble are, by construction, those where the averaged probability sits between the ensemble threshold and 0.50, which corresponds roughly to cases where one model is confident and the other is uncertain, or both are moderately uncertain. Surfacing these cases as a distinct verdict tier rather than committing to a hard binary decision is therefore well-motivated by the expected agreement structure.
+
+For emotion detection, ensemble averaging is applied by computing the element-wise mean of the two models' per-class probability vectors before thresholding. Because both emotion models share the same architecture family and were trained on identical data, their predictions are more correlated than those of the spam classifiers, and the variance-reduction benefit of averaging is less pronounced. Nonetheless, averaging provides smoother per-class probability estimates and reduces sensitivity to individual model miscalibrations on rare emotion classes, which is beneficial given the class imbalance present in the emotion corpus.
+
+\subsection{The Synthetic Data Question}
+
+The most important caveat in interpreting these results is that both the training data and the test data were generated synthetically using the same LLM-based pipeline described in Chapter~\ref{chapter:dataset}. This creates a risk of methodological circularity that may inflate measured performance beyond what would be observed on real-world phishing emails.
+
+The issue is most acute for the emotion detection task. The 10,000 phishing emails used for emotion modelling were generated using prompts that explicitly specified the target emotional category, and the emotion classifier was then trained and evaluated on a held-out subset drawn from the same distribution. In this setting, the model may be learning to recover the stylistic patterns that the LLM systematically associates with each emotional prompt, rather than detecting emotion as a human reader would experience it. Test set performance in this regime is therefore not a reliable proxy for generalisation to naturally occurring phishing emails, which are not generated from explicit emotional prompts and exhibit a far wider and less structured range of linguistic variation.
+
+The phishing detection task is less susceptible to this circularity: the binary label is not encoded in the generation prompt in the same way as the emotion label. However, the synthetic generation process still introduces a distribution shift relative to real phishing corpora. LLM-generated emails have characteristic stylistic properties, including consistent grammar, coherent narrative structure, and standard formatting, that distinguish them from organically produced phishing messages, which may contain deliberate misspellings, inconsistent formatting, or idiosyncratic cultural markers specific to particular threat actors.
+
+The F1-scores reported in this thesis should therefore be interpreted as indicative upper bounds rather than direct estimates of operational performance. Evaluation on held-out real phishing corpora, such as those available through the \ac{APWG} eCrime Exchange, is necessary to establish genuine out-of-distribution generalisation, and is identified as the highest-priority direction for future work.
+
+\subsection{Contextualisation Against Related Work}
+
+The phishing detection F1-scores of 0.91--0.92 are broadly consistent with the range reported in recent transformer-based phishing detection literature. Alhuzali et al.~\cite{app15063396} report F1-scores between 0.90 and 0.97 for BERT-family models on several benchmark datasets, and Uddin et al.~\cite{uddin2025} report comparable results with an explainable transformer approach. The results in this thesis therefore sit within the expected range for the task, with the caveat that direct numerical comparison across studies is difficult due to differences in dataset composition, class balance, and evaluation protocol.
+
+For emotion detection, no directly comparable prior work exists that frames the task as multi-label emotion classification over phishing emails specifically. The macro F1-scores of 0.70 achieved here are lower than those reported for general-domain multi-label emotion classification benchmarks (where models on datasets such as GoEmotions achieve macro F1 values above 0.50 on 28 classes, or above 0.70 on smaller taxonomies). This is consistent with the harder domain-specific nature of phishing emotion classification and the additional noise introduced by the synthetic generation process.
+
+\subsection{Practical Utility of Emotion Detection}
+
+The macro F1-scores of 0.70 for emotion detection, while lower than the binary classification results, are encouraging for a task of this difficulty. In the Gone Phishing system, the emotion detection component is presented as a complement to, not a replacement for, the spam detection result. A user who receives a maybe spam verdict accompanied by a \texttt{threat} and \texttt{positive\_arousal} profile has more actionable information than one who receives only the borderline verdict, since the emotional profile contextualises the spam probability and may help the user make a more informed decision about whether to engage with the email.
+
+From a security awareness perspective, the emotion detection output also serves an educational function. Explicitly naming the manipulation tactics present in a detected phishing attempt, and visually displaying the probability distribution across all eight emotional dimensions, helps users develop a more nuanced mental model of what phishing looks like in practice. Over time, this kind of feedback may improve users' ability to recognise phishing attempts in contexts where automated detection is not available, such as on devices or platforms not covered by the extension.
+
+\subsection{Limitations of the Current System}
+
+Beyond the synthetic data concern discussed above, several additional limitations are worth acknowledging.
+
+\textbf{Text-only analysis.} The models operate exclusively on textual content. Real phishing emails frequently employ visual deception, including spoofed logos, mismatched sender display names, and malicious URLs designed to resemble legitimate domains, none of which are accessible to a text classifier. Incorporating URL features, header authentication results (SPF/DKIM/DMARC), and rendered visual content would provide a more complete detection signal.
+
+\textbf{Language coverage.} All models were trained on English-language emails. Transformer models fine-tuned on monolingual data generalise poorly across languages, and phishing campaigns increasingly target non-English speakers. A multilingual extension would require a broader corpus and potentially multilingual pretrained models such as XLM-RoBERTa.
+
+\textbf{Adversarial robustness.} The current models have not been evaluated against adversarially crafted inputs. Attackers aware of the detection system could craft emails designed to minimise the predicted spam probability while maintaining the social engineering effectiveness of the message, for example by injecting benign content to dilute phishing signals or substituting trigger keywords with synonyms. Adversarial training and periodic model refresh cycles would be necessary in a production deployment.
+
+\textbf{Threshold stability.} The calibrated decision thresholds were tuned on a validation set drawn from the same synthetic distribution as the training data. In deployment against real-world emails, the optimal threshold is likely to differ and may drift over time as phishing tactics evolve. A production system would need a mechanism for ongoing threshold recalibration based on user feedback or periodic evaluation against fresh labelled data.

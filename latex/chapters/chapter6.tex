@@ -1,4 +1,4 @@
-\chapter{Web Application}
+\chapter{The \textit{Gone Phishing} System}
 \label{chapter:webapp}
 
 \section{Overview}
@@ -25,6 +25,8 @@ Figure~\ref{fig:webapp_architecture} illustrates the high-level architecture of 
     \label{fig:webapp_architecture}
 \end{figure}
 
+The decoupled architecture offers several practical advantages. Keeping the backend stateless and model-centric means the frontend and extension can be updated independently without requiring redeployment of the inference pipeline. The same hosted \ac{API} serves both the web application and the Chrome extension, reducing infrastructure duplication and ensuring that both interfaces always benefit from the same underlying model versions. The use of Base64-encoded \texttt{.eml} content as the transport format means that no raw file uploads are required, simplifying \ac{CORS} configuration and enabling the frontend to run as a purely static site with no server-side rendering dependency.
+
 \subsection{Backend API}
 
 The backend is implemented in \texttt{api.py} using FastAPI and exposes a set of \ac{REST} endpoints for spam and emotion classification. All cross-origin requests are permitted via \texttt{\ac{CORS}Middleware} to allow the decoupled frontend to communicate freely with the hosted service.
@@ -39,19 +41,29 @@ On application startup, four transformer model bundles are loaded from the Huggi
     \item \textbf{EmotionModelBundle} — wraps a multi-label sequence classifier (\acs{RoBERTa}-Large or \acs{ELECTRA}-Large) and reads the per-class decision thresholds from a \texttt{model\_config.json} file. The \texttt{predict\_proba} method applies the sigmoid function to the raw logits and returns a dictionary mapping each of the eight consolidated emotion classes to a probability in $[0, 1]$.
 \end{itemize}
 
-All model inference is performed within \texttt{torch.no\_grad()} context managers to suppress gradient computation and reduce memory overhead during serving.
+All model inference is performed within \texttt{torch.no\_grad()} context managers to suppress gradient computation and reduce memory overhead during serving. Model weights are loaded once at startup and kept resident in memory for the lifetime of the process, avoiding the overhead of repeated checkpoint loading per request.
+
+The threshold configuration files stored alongside each model checkpoint serve a dual purpose. During training they record the validation-tuned decision threshold alongside the test-set metrics at that threshold, providing a reproducible audit trail. At inference time the \ac{API} reads the recommended threshold directly from the file rather than hard-coding it in the serving code, which means a model can be recalibrated and re-uploaded to the Hub without requiring any changes to the backend application.
 
 \subsubsection{EML Parsing}
 
 The \texttt{extract\_text\_from\_eml} function uses Python's standard \texttt{email} library to parse raw \texttt{.eml} bytes into a structured message object. The function extracts the \texttt{Subject} and \texttt{From} header fields, then iterates over the message parts to collect \texttt{text/plain} content (preferred) or \texttt{text/html} content as a fallback. \ac{HTML} content is stripped of tags using a regular expression and decoded with \texttt{html.unescape} before being concatenated into the final input string. Files exceeding 5\,MB are rejected at the \ac{API} boundary.
 
+The parsing strategy deliberately mirrors what a human reader sees when opening an email: the subject and sender are prepended to the body as labelled fields (e.g., \texttt{Subject: ...}, \texttt{From: ...}), so the model receives the same contextual signals that a user would rely on when assessing an email's legitimacy. This is consistent with the text construction strategy used during training, where the same header fields were concatenated with the body before tokenisation.
+
 \subsubsection{Ensemble Inference Logic}
 
 \begin{itemize}
-    \item \textbf{Spam ensemble.} The spam detection pipeline averages the softmax probabilities returned by the \acs{RoBERTa}-Large and \acs{ELECTRA}-Large spam classifiers. The averaged probability is compared against the mean of the two models' individual calibrated thresholds to produce the three-tier classification described in Chapter~4: \textit{ham} (below threshold), \textit{maybe spam} (at or above threshold but below 0.50), and \textit{spam} (at or above 0.50). This tiered scheme allows the interface to surface borderline cases to the user rather than forcing a hard binary decision.
+    \item \textbf{Spam ensemble.} The spam detection pipeline averages the softmax probabilities returned by the \acs{RoBERTa}-Large and \acs{ELECTRA}-Large spam classifiers. The averaged probability is compared against the mean of the two models' individual calibrated thresholds to produce the three-tier classification described in Chapter~\ref{chapter:model}: \textit{ham} (below threshold), \textit{maybe spam} (at or above threshold but below 0.50), and \textit{spam} (at or above 0.50). This tiered scheme allows the interface to surface borderline cases to the user rather than forcing a hard binary decision.
 
     \item \textbf{Emotion ensemble.} The emotion detection pipeline obtains per-class probability vectors from both emotion models (\acs{RoBERTa}-Large and \acs{ELECTRA}-Large) and computes their element-wise arithmetic mean. Each averaged probability is then compared against the per-class threshold derived from the \acs{RoBERTa}-Large model's validation-set optimisation to determine whether a given emotion is detected. The \texttt{ensemble\_emotions} helper function returns both the list of detected emotion labels and a full list of \texttt{EmotionScore} objects sorted by probability in descending order.
+
+    \item \textbf{Conditional emotion analysis.} To reduce unnecessary computation and avoid presenting potentially misleading psychological profiles for clean emails, the \texttt{/predict/eml} endpoint runs emotion analysis unconditionally at the \ac{API} level but the frontend suppresses the emotion result card when the email is classified as ham. This design keeps the backend stateless and the decision to display emotion results in the presentation layer, where it can be adjusted without modifying the inference pipeline.
 \end{itemize}
+
+\subsubsection{Input Validation and Error Handling}
+
+The \ac{API} enforces several validation rules before invoking model inference. The \texttt{/predict/eml} endpoint rejects requests whose \texttt{filename} field does not carry a \texttt{.eml} extension, and refuses payloads whose decoded size exceeds 5\,MB, returning an \texttt{HTTP 413} response in the latter case. Empty or whitespace-only text inputs to \texttt{/predict} and \texttt{/predict/emotion} are rejected with \texttt{HTTP 422}. Batch requests to \texttt{/predict/batch} are capped at 50 texts to prevent runaway inference costs on the hosted \ac{GPU}. EML parsing failures are caught and returned as structured \texttt{HTTP 422} responses with a descriptive detail message, allowing the frontend to surface meaningful error banners to the user rather than generic network errors.
 
 \subsubsection{API Endpoints}
 
@@ -77,6 +89,38 @@ POST & \texttt{/predict/batch}   & Batch spam classification for up to 50 text i
 
 The \texttt{/predict/eml} endpoint is the primary entry point used by the web frontend. It accepts a \ac{JSON} body containing the filename and Base64-encoded file content, validates the file extension and size, extracts the email text, and returns a \texttt{FullEmlResponse} object combining the \texttt{PredictResponse} (spam result) and \texttt{EmotionPredictResponse} (emotion result).
 
+The \texttt{/health} endpoint deserves particular attention in a production context. Because the four transformer model bundles are large (each ranging from 1.3\,GB to 1.4\,GB on disk) and take a non-trivial time to load into \ac{GPU} memory at startup, the health endpoint provides a way for monitoring infrastructure to distinguish between a fully initialised instance and one that is still loading. It reports the device in use (CUDA or CPU) and a boolean indicating whether all four bundles have completed loading, which can be used as a readiness probe in container orchestration environments.
+
+\subsection{Response Schema}
+
+The \texttt{/predict/eml} endpoint returns a \texttt{FullEmlResponse} object with two nested fields:
+
+\begin{itemize}
+    \item \textbf{\texttt{spam}} — a \texttt{PredictResponse} containing the ensemble spam probability, the is\_spam and maybe\_spam flags, the ensemble decision threshold, the \texttt{maybe\_spam} upper boundary (fixed at 0.50), and individual \texttt{ModelResult} objects for each of the two spam classifiers, each reporting that model's probability and per-model threshold.
+
+    \item \textbf{\texttt{emotion}} — an \texttt{EmotionPredictResponse} containing the list of detected emotion labels, a sorted list of \texttt{EmotionScore} objects covering all eight consolidated classes (each with its ensemble-averaged probability, detection flag, and threshold), and per-model \texttt{EmotionModelResult} breakdowns for \acs{RoBERTa}-Large and \acs{ELECTRA}-Large.
+\end{itemize}
+
+This schema is deliberately verbose. Exposing per-model probabilities alongside the ensemble result allows the frontend to render a model breakdown panel without requiring additional \ac{API} calls. It also makes the response useful for downstream programmatic analysis, since a researcher integrating the \ac{API} into a pipeline can inspect individual model outputs without reimplementing the ensemble logic on the client side.
+
+\section{Frontend Web Application}
+
+The frontend is a single-page application implemented entirely in vanilla \ac{HTML}, CSS, and JavaScript, with no build step or framework dependency. This design choice was deliberate: a zero-dependency frontend can be served from any static file host and requires no Node.js toolchain, making it straightforward to host on platforms such as GitHub Pages, Netlify, or Cloudflare Pages alongside the Hugging Face Spaces backend.
+
+\subsection{User Interaction Flow}
+
+The interaction model is minimal by design. Users drag and drop a \texttt{.eml} file onto the upload zone or click to open a file browser, after which the filename and file size are displayed as confirmation. Pressing the \textit{Scan email} button reads the file as an \texttt{ArrayBuffer}, encodes it as Base64, and submits it to the \texttt{/predict/eml} endpoint. A loading spinner and disabled button state provide feedback during the request. On response, the spam result card and, where applicable, the emotion result card animate into view with probability bars that fill progressively via CSS transitions.
+
+\subsection{Result Visualisation}
+
+The spam result card adapts its visual appearance to the verdict: red accent colours and a warning icon for spam, amber for maybe spam, and green for ham. A horizontal probability bar shows the ensemble spam probability against a labelled threshold marker, and a two-column breakdown panel shows the individual probabilities and verdicts for each model. This per-model breakdown allows technically literate users to see whether the two classifiers agree, providing an informal confidence indicator beyond the ensemble average alone.
+
+The emotion result card is shown only when the email is classified as spam or maybe spam. It presents the detected emotion labels as coloured chips, each styled with an emotion-specific accent colour, followed by an animated horizontal bar chart listing all eight consolidated classes sorted by probability. A threshold tick mark on each bar indicates the per-class detection boundary, making the detection logic transparent rather than presenting a binary detected or not label without context. A collapsible model breakdown panel shows the individual per-model probabilities for each emotion class in a compact two-column layout, which allows users to identify cases where the two emotion models disagree.
+
+\subsection{Accessibility and Theme}
+
+The interface ships with both dark and light colour themes, toggled by a button in the header. The selected theme is persisted in \texttt{localStorage} across sessions. Colour choices were made to maintain sufficient contrast in both modes, and interactive elements carry appropriate \texttt{aria-label} attributes.
+
 \section{Chrome Browser Extension}
 
 In addition to the web frontend, a companion Chrome extension named \textit{Gone Phishing} was developed to bring the same analysis capability directly into the user's inbox. The extension targets Gmail (\texttt{mail.google.com}) and Outlook Web (\texttt{outlook.live.com}, \texttt{outlook.office.com}), the two most widely used browser-based email clients.
@@ -86,6 +130,14 @@ In addition to the web frontend, a companion Chrome extension named \textit{Gone
 The extension is implemented as a \ac{MV3} package, consisting of a popup UI (\texttt{popup.html}, \texttt{popup.css}, \texttt{popup.js}) and a minimal content script that serves as a reference extraction helper. The popup handles all logic directly: when the user clicks the toolbar icon and presses \textit{Scan email}, the popup injects a one-off extraction function into the active tab via the \texttt{chrome.scripting.executeScript} \ac{API}.
 
 The injected function detects the active email client and extracts the email's subject, sender address, and body from the live DOM. For Gmail it targets the \texttt{.adn.ads} message containers and the \texttt{.a3s.aiL} body element; for Outlook Web it targets the \texttt{[data-testid="message-body"]} selector, with fallbacks for both clients. The extracted text is returned to the popup, which then calls the hosted \ac{API} directly.
+
+The choice of \ac{MV3} is worth noting. Manifest V3, Chrome's current extension platform, restricts the use of background service workers and prohibits remote code execution. The extension adheres to these constraints by keeping all logic in the popup script and using \texttt{chrome.scripting.executeScript} with a locally defined function literal rather than a remotely fetched script. Theme preferences are stored with \texttt{chrome.storage.local} rather than \texttt{localStorage}, since the popup context does not persist between openings and \texttt{chrome.storage} is the appropriate persistence layer for extension data.
+
+\subsection{Email Extraction Strategy}
+
+Reliable DOM extraction from webmail clients is non-trivial because Gmail and Outlook Web both render email content inside deeply nested, dynamically generated \ac{HTML} structures with class names that may vary across application versions. The extraction function therefore applies a layered fallback strategy for each client: it tries the most specific, most reliable selector first and progressively widens its search if the preferred element is not found. For Gmail, the function additionally filters out collapsed or quoted message containers, targeting only the most recently expanded message in a thread, which is the one the user is actively reading. Both clients have their extracted subject, sender, and body concatenated in the same format used during model training, ensuring that the text passed to the \ac{API} is structurally consistent with the training distribution.
+
+If extraction fails entirely, whether because no email is open, the DOM structure has changed, or the active tab is not a supported email client, the extension popup displays an informative idle state explaining the requirement to open an email before scanning, rather than silently returning an empty result or a generic error.
 
 \subsection{API Usage}
 
@@ -111,4 +163,24 @@ The extension popup mirrors the visual design of the main web application, shari
 
 \section{Deployment}
 
+\subsection{Backend}
+
 The backend \ac{API} is hosted as a Hugging Face Space using a Docker runtime, which handles dependency installation from \texttt{requirements.txt} and launches the FastAPI application with Uvicorn. The four model checkpoints are downloaded from the Hugging Face Hub at startup via the \texttt{huggingface\_hub} library and cached within the Space container. The web frontend is served as a static site and communicates with the hosted \ac{API} endpoint at \texttt{https://dpedrinho01-api-host.hf.space}. The Chrome extension points to the same hosted endpoint and requires no additional infrastructure.
+
+Hugging Face Spaces was selected as the deployment platform for several reasons. It provides free-tier hosting with \ac{GPU} support for Spaces backed by ZeroGPU, it integrates naturally with the Hub's model repository system (meaning the same credentials used to push model checkpoints can be used to configure the Space), and it exposes a public HTTPS endpoint without requiring manual TLS certificate management. The Docker runtime gives full control over the Python environment, which is important given the specific version constraints of the Transformers and PyTorch dependencies.
+
+\subsection{Latency Considerations}
+
+Loading four large transformer models at startup introduces a cold-start delay of approximately 60--90 seconds on the free-tier \ac{CPU} runtime before the \ac{API} becomes ready to serve requests. Once loaded, inference latency per request depends primarily on the device. On \ac{CPU}, a single \texttt{/predict/eml} request invoking all four models takes approximately 8--15 seconds depending on email length. On a \ac{GPU}-accelerated runtime, this reduces to under 2 seconds for typical email lengths. For the purposes of this prototype, the latency characteristics of the \ac{CPU} runtime are acceptable given the non-real-time, user-initiated nature of the scanning workflow. A production deployment would benefit from persistent \ac{GPU} allocation and request batching to reduce per-query latency.
+
+\subsection{Frontend}
+
+The frontend is hosted as a static site independent of the backend Space. Because it is a collection of plain \ac{HTML}, CSS, and JavaScript files with no build step, it can be served from any static file host. The API base URL is defined as a single constant at the top of \texttt{app.js}, which can be updated in a single location if the backend is redeployed or migrated.
+
+\section{Discussion}
+
+The Gone Phishing system demonstrates that a research-grade NLP pipeline can be packaged into a usable end-to-end application with modest engineering effort. The separation of concerns between the inference backend and the presentation frontend kept the codebase manageable and made it straightforward to develop and test each component independently. The Chrome extension shows that the same \ac{API} can serve multiple surfaces without modification, extending the system's reach to the email clients where users actually encounter phishing attempts, rather than requiring them to manually export \texttt{.eml} files and upload them to a separate tool.
+
+Several design decisions reflect the asymmetric risk of false negatives in phishing detection. The three-tier inference scheme (ham, maybe spam, spam) was specifically introduced to surface borderline cases rather than suppressing them with a hard binary decision. The maybe spam tier essentially functions as a soft alert that nudges the user toward closer inspection without generating the alert fatigue associated with high false-positive rates. Similarly, showing emotion analysis only for non-ham classifications reduces noise: presenting a psychological manipulation profile for a clean email would be confusing and could erode user trust in the system.
+
+From a user-facing perspective, the emotion analysis component provides value beyond a simple spam flag. A user who sees that an email has been flagged as spam and additionally identifies threat and urgency as the dominant emotional signals has more actionable information than one who receives only a binary verdict. This transparency can also serve an educational function, helping users recognise the specific manipulation tactics that made a message suspicious, potentially improving their ability to identify phishing attempts in contexts where automated tools are not available.
