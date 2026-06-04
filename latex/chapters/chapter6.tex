@@ -163,6 +163,8 @@ The extension popup mirrors the visual design of the main web application, shari
 
 \section{Deployment}
 
+The deployment of the Gone Phishing system consists of hosting the FastAPI backend on Hugging Face Spaces and serving the frontend as a static site. The Chrome extension is published on the Chrome Web Store, referencing the same hosted backend.
+
 \subsection{Backend}
 
 The backend \ac{API} is hosted as a Hugging Face Space using a Docker runtime, which handles dependency installation from \texttt{requirements.txt} and launches the FastAPI application with Uvicorn. The four model checkpoints are downloaded from the Hugging Face Hub at startup via the \texttt{huggingface\_hub} library and cached within the Space container. The web frontend is served as a static site and communicates with the hosted \ac{API} endpoint at \texttt{https://dpedrinho01-api-host.hf.space}. The Chrome extension points to the same hosted endpoint and requires no additional infrastructure.

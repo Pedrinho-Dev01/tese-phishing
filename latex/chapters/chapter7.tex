@@ -6,6 +6,8 @@ This chapter consolidates and interprets the experimental results obtained acros
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Phishing Detection Results}
 \label{sec:results_spam}
+
+A comprehensive set of results for the phishing detection task is presented in Table~\ref{tab:results_spam_full}, which reports accuracy, F1-score, precision, and recall for both classical baselines and fine-tuned transformer models under both thresholding strategies.
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{Overall Performance}
@@ -66,6 +68,8 @@ Both error categories point to the same underlying limitation: even deep context
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Emotion Detection Results}
 \label{sec:results_emotion}
+
+For the emotion detection task, the results are more nuanced due to the multi-label nature of the problem and the inherent subjectivity of emotional annotation. Table~\ref{tab:results_emotion_full} reports exact match accuracy, macro F1, macro precision, and macro recall for both models under both thresholding strategies on the held-out test set of 2,000 phishing emails.
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{Overall Performance}
@@ -121,6 +125,8 @@ Third, emotion is a more subjective and contextually grounded phenomenon than bi
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Discussion}
 \label{sec:results_discussion}
+
+The results presented in the previous sections demonstrate that fine-tuned transformer models can achieve high performance on both phishing detection and multi-label emotion detection tasks within the synthetic corpus. The phishing detection results are particularly strong, with F1-scores above 0.90, while the emotion detection results, though more modest, still indicate meaningful signal capture in a challenging multi-label setting.
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{Model Agreement and Ensemble Behaviour}
