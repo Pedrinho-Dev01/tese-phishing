@@ -1,13 +1,16 @@
 \chapter{Detection Models}
 \label{chapter:model}
 
-This chapter describes the design, training, and evaluation of the transformer-based models developed for two complementary classification tasks: binary phishing detection and multi-label emotion detection. Both tasks share the same two base architectures (\acs{RoBERTa}-large and \acs{ELECTRA}-large) and a common training philosophy, but differ in their output formulations, loss functions, and evaluation strategies. Sections~\ref{sec:spam_model_selection}--\ref{sec:spam_evaluation} cover the phishing detection models; Sections~\ref{sec:emotion_model_selection}--\ref{sec:emotion_evaluation} cover the emotion detection models.
+This chapter describes the design, training, and evaluation of the transformer-based models developed for two complementary classification tasks: binary phishing detection and multi-label emotion detection. Both tasks share the same two base architectures (\acs{RoBERTa}-large and \acs{ELECTRA}-large) and a common training philosophy, but differ in their output formulations, loss functions, and evaluation strategies. Section~\ref{sec:phishing_detection} focuses on the binary classification of phishing emails, while Section~\ref{sec:emotion_detection} addresses the multi-label classification of emotional manipulation strategies within those emails. Each section covers model selection, dataset preparation, implementation details, and evaluation results, including comparisons against classical baselines where applicable.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Part I: Phishing Detection}
+\label{sec:phishing_detection}
+
+This section describes the development of transformer-based models for binary phishing detection. The task is formulated as a binary classification problem, where the model must predict whether a given email is \texttt{phishing} or \texttt{non-phishing}. The section covers model selection, dataset preparation, implementation details, and evaluation results, including a comparison against classical baselines.
 % ─────────────────────────────────────────────────────────────────────────────
 
-\section{Model Selection}
+\subsection{Model Selection}
 \label{sec:spam_model_selection}
 
 The selection of appropriate architectures for phishing email classification requires balancing representational capacity, training stability, and the specific linguistic characteristics of malicious email text. Based on a review of recent advances in \ac{NLP} and the findings surveyed in Chapter~\ref{chapter:related_work}, two transformer-based models were selected: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electra}.
@@ -18,7 +21,7 @@ The selection of appropriate architectures for phishing email classification req
 
 The decision to use both architectures jointly was motivated by their complementary inductive biases: RoBERTa's masked language modelling produces robust long-range contextual representations, while ELECTRA's discriminative pretraining yields fine-grained sensitivity to local token plausibility. Averaging their softmax probabilities in an ensemble means that disagreements on borderline cases are naturally surfaced by the \textit{maybe spam} tier of the three-class inference scheme, rather than forcing a premature hard binary decision. Both models have demonstrated state-of-the-art performance in text classification and semantic similarity tasks \cite{liu2019roberta, sanh2019distilbert}, and their large-scale pretrained representations provide a strong initialisation for fine-tuning on the relatively modest phishing corpus assembled in Chapter~\ref{chapter:dataset}.
 
-\section{Dataset Information \& Preparation}
+\subsection{Dataset Information \& Preparation}
 
 The dataset used for training and evaluation consists of a combination of the original 10,000 phishing email samples generated in Chapter~\ref{chapter:dataset} and an additional 10,000 non-phishing email samples produced using the same LLM-based generation methodology, but without emotional category conditioning. The resulting corpus of 20,000 samples is balanced at the class level, with exactly 10,000 examples per class.
 
@@ -28,7 +31,7 @@ Stratified splits were produced using \texttt{train\_test\_split} from scikit-le
 
 Class weights were computed on the training partition using \texttt{compute\_class\_weight} with the \texttt{balanced} strategy from scikit-learn. Although the overall corpus is balanced, the stratified sub-sampling can introduce minor deviations in individual partitions, so explicit class weighting serves as a safeguard and maintains consistency with the weighting strategy applied to the emotion detection models in Part~II. The resulting weights were incorporated into a custom \texttt{WeightedTrainer} that replaces the standard cross-entropy loss with a weighted variant.
 
-\section{Model Implementation}
+\subsection{Model Implementation}
 
 The implementation leveraged the Hugging Face Transformers library \cite{wolf2020transformers} for model loading, tokenization, and training, combined with scikit-learn \cite{pedregosa2011scikit} for evaluation metrics and class weight computation. For each model (\acs{RoBERTa}-large, \acs{ELECTRA}-large), the following steps were performed:
 
@@ -44,12 +47,12 @@ The implementation leveraged the Hugging Face Transformers library \cite{wolf202
 	\item \textbf{Evaluation:} Model performance was monitored during training using accuracy, precision, recall, and F1-score on the validation set. The best model checkpoint was selected based on the highest validation F1-score. At inference time, in addition to using the standard decision threshold of 0.5, a custom threshold of 0.35 was evaluated. This lower threshold was chosen to increase recall for phishing detection, since in a security context, failing to detect a phishing email (false negative) carries greater risk than a false positive. Lowering the threshold shifts the operating point toward higher recall at a modest cost to precision, which is the preferred trade-off for a security-oriented classifier.
 \end{itemize}
 
-\section{Evaluation and Results}
+\subsection{Evaluation and Results}
 \label{sec:spam_evaluation}
 
 After training, each model was evaluated on the held-out test set. Two decision thresholds were compared: the standard threshold of 0.5, where the class with the highest softmax probability is selected, and a custom threshold of 0.35, which classifies an email as phishing whenever the predicted phishing probability exceeds 0.35. This lower threshold aims to improve recall at a modest cost to precision, reflecting the asymmetric cost of errors in phishing detection.
 
-\subsection{ELECTRA-large Results}
+\subsubsection{ELECTRA-large Results}
 
 Table~\ref{tab:electra_results} presents the test set performance of the \acs{ELECTRA}-large model at both decision thresholds.
 
@@ -69,7 +72,7 @@ Table~\ref{tab:electra_results} presents the test set performance of the \acs{EL
 
 The \acs{ELECTRA}-large model achieved an F1-score of 0.9051 at the standard threshold, with high precision (0.9230) but comparatively lower recall (0.8880). Lowering the threshold to 0.35 yielded a marginal improvement across all metrics, increasing the F1-score to 0.9055 and recall to 0.8920, while precision decreased only slightly to 0.9195. This confirms that the custom threshold provides a better trade-off for phishing detection, capturing more true positives with minimal impact on precision.
 
-\subsection{RoBERTa-large Results}
+\subsubsection{RoBERTa-large Results}
 
 Table~\ref{tab:roberta_results} presents the test set performance of the \acs{RoBERTa}-large model at both decision thresholds.
 
@@ -89,7 +92,7 @@ Table~\ref{tab:roberta_results} presents the test set performance of the \acs{Ro
 
 The \acs{RoBERTa}-large model achieved an F1-score of 0.9169 at the standard threshold, with very high precision (0.9410) and recall (0.8940). Lowering the threshold to 0.35 resulted in a slight decrease in accuracy and F1-score, with precision dropping to 0.9371 while recall remained unchanged at 0.8940. This suggests that for \acs{RoBERTa}-large, the standard threshold already provides a strong balance between precision and recall, and the custom threshold does not offer a significant improvement in this case.
 
-\subsection{Baseline Comparison}
+\subsubsection{Baseline Comparison}
 \label{sec:baseline_comparison}
 
 To contextualise the performance of the fine-tuned transformer models, two classical baselines were evaluated under the same experimental conditions: identical data splits (random seed 42), identical stratification strategy, and identical threshold settings.
@@ -123,7 +126,7 @@ TF-IDF + Logistic Regression & 0.50 (Standard) & 0.8856 & 0.8560 & 0.8621 & 0.85
 
 The TF-IDF + Logistic Regression baseline achieved an F1-score of 0.8560, demonstrating that lexical features alone carry substantial signal for phishing detection. However, this represents a gap of approximately 6 percentage points in F1 relative to \acs{RoBERTa}-large (0.9150), confirming that contextual, deep representations learned during pre-training provide meaningful improvements beyond surface-level term statistics. Multinomial Naive Bayes performs considerably worse (F1 = 0.7459), consistent with its inability to model feature correlations and its poor calibration on long, variable-length email texts. The ROC-AUC of the logistic regression baseline (0.948) is noteworthy --- it approaches transformer-level discriminative ability at the ranking level --- yet this does not translate into calibrated decisions at any single threshold, which explains the F1 gap. Taken together, these results establish that the transformer ensemble provides a clear and quantifiable improvement over classical approaches, while the logistic regression baseline sets a competitive non-trivial floor that any proposed method should be expected to surpass.
 
-\subsection{Comparative Analysis}
+\subsubsection{Comparative Analysis}
 \label{sec:evaluation}
 
 Table~\ref{tab:phishing_model_comparison} summarizes both models using the threshold configuration selected for deployment.
@@ -154,16 +157,19 @@ Based on the similar performance of both models, the final selection was a combi
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Part II: Emotion Detection}
+\label{sec:emotion_detection}
+
+This section describes the development of transformer-based models for multi-label emotion detection within phishing emails. The task is formulated as a multi-label classification problem, where the model must predict the presence or absence of multiple emotional manipulation strategies simultaneously. The section covers model selection, emotion taxonomy consolidation, dataset preparation, implementation details, and evaluation results, including a comparison against classical baselines.
 % ─────────────────────────────────────────────────────────────────────────────
 
-\section{Model Selection}
+\subsection{Model Selection}
 \label{sec:emotion_model_selection}
 
 To model the emotional content present in phishing emails, the same two transformer-based architectures used for phishing detection were employed: \acs{RoBERTa}-large \cite{liu2019roberta} and \acs{ELECTRA}-large \cite{clark2020electra}. These models are widely adopted in \acs{NLP} classification tasks and provide strong contextual representations that are suitable for capturing subtle emotional cues in text.
 
 Unlike the binary phishing detection task in Part~I, emotion detection is formulated here as a \textbf{multi-label classification} problem: a single phishing email may simultaneously express multiple emotions (e.g., fear and curiosity). This formulation better reflects realistic phishing language, where overlapping emotional manipulation strategies are common.
 
-\section{Emotion Taxonomy Consolidation}
+\subsection{Emotion Taxonomy Consolidation}
 \label{sec:emotion_taxonomy}
 
 The original annotation schema comprised fourteen emotional categories. Prior to model training, an inter-label co-occurrence analysis was conducted on the annotated corpus to identify clusters of emotions that consistently co-occurred and represented semantically equivalent manipulation vectors. This analysis motivated a principled consolidation from fourteen classes to eight, with the goal of increasing the per-class training signal while preserving meaningful distinctions between manipulation strategies.
@@ -174,15 +180,13 @@ Table~\ref{tab:emotion_merging} summarises the mapping from original categories 
 \centering
 \caption[Emotion label consolidation]{Emotion label consolidation: mapping from the original 14-class annotation schema to the 8-class training taxonomy.}
 \label{tab:emotion_merging}
-\begin{tabular}{lll}
+\begin{tabular}{lp{4.5cm}p{5.5cm}}
 \hline
 \textbf{Consolidated Label} & \textbf{Original Categories} & \textbf{Rationale} \\
 \hline
-\texttt{positive\_arousal} & excitement, surprise, joy, desire & Co-occurrence rate 43–60\%; \\
-                           &                                    & shared positive-affect manipulation vector \\
+\texttt{positive\_arousal} & excitement, surprise, joy, desire & Co-occurrence rate 43–60\%; shared positive-affect manipulation vector \\
 \texttt{warmth}            & admiration, gratitude, caring      & Trust-building emotional cluster \\
-\texttt{threat}            & anger, fear                        & Intimidation/coercion cluster; \\
-                           &                                    & 79\% of anger samples contain fear \\
+\texttt{threat}            & anger, fear                        & Intimidation/coercion cluster; 79\% of anger samples contain fear \\
 \texttt{curiosity}         & curiosity                          & Distinct manipulation tactic \\
 \texttt{confusion}         & confusion                          & Distinct manipulation tactic \\
 \texttt{sadness}           & sadness                            & Distinct manipulation tactic \\
@@ -204,7 +208,7 @@ This consolidation yields a final training taxonomy of \textbf{eight classes}. E
 
 The label merging was applied programmatically prior to training via a dedicated preprocessing script (\texttt{merge\_labels.py}), which reads the raw annotated corpus and writes the consolidated version to \texttt{combined\_emails\_dataset\_merged.csv}. All training scripts operate on this merged file.
 
-\section{Dataset Preparation}
+\subsection{Dataset Preparation}
 
 The starting point was the 20,000 combined email dataset used throughout this thesis. For emotion modelling, only emails labelled as \texttt{phishing} were retained, since the objective is to characterise emotional patterns specifically within malicious messages.
 
@@ -212,7 +216,7 @@ Rows without emotion annotation were removed, and the remaining emotion labels w
 
 To preserve label distribution during splitting, a stratification proxy was used: for each sample, the index of its dominant label (\texttt{argmax} over the multi-hot vector) served as the stratification target. Data was split into test (20\%) and train (80\%), followed by a validation split (10\% of train), resulting in approximately 72\%/8\%/20\% train/validation/test partitions, with a fixed random seed for reproducibility.
 
-\section{Model Implementation}
+\subsection{Model Implementation}
 
 Model development used the Hugging Face Transformers ecosystem \cite{wolf2020transformers} for tokenization, model fine-tuning, and checkpoint management, together with scikit-learn \cite{pedregosa2011scikit} for metric computation.
 
@@ -234,12 +238,12 @@ For each model (\acs{RoBERTa}-large and \acs{ELECTRA}-large), the following pipe
 	\item \textbf{Evaluation:} Performance was reported using exact-match accuracy, macro precision, macro recall, and macro F1, along with per-class classification reports on the held-out test set.
 \end{itemize}
 
-\section{Evaluation and Results}
+\subsection{Evaluation and Results}
 \label{sec:emotion_evaluation}
 
 After training, each model was evaluated on the test set using both thresholding strategies selected from validation: global threshold and per-class thresholds. This comparison assesses whether class-specific calibration improves the balance between precision and recall across the eight consolidated emotion classes.
 
-\subsection{RoBERTa-large Results}
+\subsubsection{RoBERTa-large Results}
 
 Table~\ref{tab:roberta_emotion_results} summarises the test performance of the \acs{RoBERTa}-large model under both thresholding strategies.
 
@@ -260,7 +264,7 @@ Per-class thresholds (best on val) & 0.2816 & 0.7041 & 0.6793 & 0.7477 \\
 }
 \end{table}
 
-\subsection{ELECTRA-large Results}
+\subsubsection{ELECTRA-large Results}
 
 Table~\ref{tab:electra_emotion_results} reports the corresponding results for \acs{ELECTRA}-large.
 
@@ -281,7 +285,7 @@ Per-class thresholds & 0.2775 & 0.7036 & 0.6890 & 0.7407 \\
 }
 \end{table}
 
-\subsection{Comparative Analysis}
+\subsubsection{Comparative Analysis}
 
 Table~\ref{tab:emotion_model_comparison} provides a cross-model summary using the best threshold strategy for each architecture. The label consolidation described in Section~\ref{sec:emotion_taxonomy} ensures that all models are trained and evaluated against the same eight semantically coherent classes, making cross-model comparison meaningful and directly comparable.
 
