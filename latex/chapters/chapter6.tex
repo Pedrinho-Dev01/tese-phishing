@@ -141,14 +141,12 @@ If extraction fails entirely, whether because no email is open, the DOM structur
 
 \subsection{API Usage}
 
-Unlike the web frontend, which submits raw \texttt{.eml} files to the combined \texttt{/predict/eml} endpoint, the extension calls two endpoints separately:
+Unlike the web frontend, which submits raw \texttt{.eml} files to the combined \texttt{/predict/eml} endpoint, the extension calls two endpoints separately. This approach avoids the overhead of Base64 encoding an \texttt{.eml} file, since the extension works with text already extracted from the rendered DOM rather than raw email files.
 
 \begin{itemize}
     \item \texttt{POST /predict} — for spam/ham ensemble classification, using \texttt{model: "ensemble"}.
     \item \texttt{POST /predict/emotion} — for multi-label emotion detection.
 \end{itemize}
-
-This approach avoids the overhead of Base64 encoding an \texttt{.eml} file, since the extension works with text already extracted from the rendered DOM rather than raw email files.
 
 \subsection{User Interface}
 

@@ -12,7 +12,7 @@ A comprehensive set of results for the phishing detection task is presented in T
 
 \subsection{Overall Performance}
 
-Table~\ref{tab:results_spam_full} reports the complete set of phishing detection results across all evaluated models and thresholds on the held-out test set of 4,000 samples (2,000 per class).
+Both transformer models substantially outperform the classical baselines across all metrics. The TF-IDF + Logistic Regression baseline achieves an F1-score of 0.8560, which is a respectable result and establishes a meaningful lower bound: the lexical surface of phishing emails does carry strong discriminative signal. The Multinomial Naive Bayes baseline lags considerably at F1 = 0.7459, consistent with its inability to model feature co-occurrences and its poor calibration on long, variable-length email text. Table~\ref{tab:results_spam_full} reports the complete set of phishing detection results across all evaluated models and thresholds on the held-out test set of 4,000 samples (2,000 per class).
 
 \begin{table}[htbp]
 \centering
@@ -36,8 +36,6 @@ TF-IDF + Logistic Regression & 0.50 & 0.8856 & 0.8560 & 0.8621 & 0.8500 \\
 \end{tabular}%
 }
 \end{table}
-
-Both transformer models substantially outperform the classical baselines across all metrics. The TF-IDF + Logistic Regression baseline achieves an F1-score of 0.8560, which is a respectable result and establishes a meaningful lower bound: the lexical surface of phishing emails does carry strong discriminative signal. The Multinomial Naive Bayes baseline lags considerably at F1 = 0.7459, consistent with its inability to model feature co-occurrences and its poor calibration on long, variable-length email text.
 
 The roughly 6 percentage point F1 gap between the logistic regression baseline and the best transformer model (\acs{RoBERTa}-large at 0.9169) reflects the added value of contextual, bidirectional representations over bag-of-words statistics: phishing manipulation tactics frequently depend on how phrases interact across the full message, a relationship that TF-IDF vectors cannot capture. It is also worth noting that the logistic regression baseline achieves a ROC-AUC of approximately 0.948, approaching transformer-level discriminative ability at the ranking level, yet this does not translate into calibrated decisions at any single operating threshold, which explains the F1 gap. This suggests that the primary advantage of transformers is not that they rank phishing emails higher in absolute terms, but that their probability estimates are better calibrated, allowing the threshold-based inference scheme to work more effectively.
 
@@ -74,7 +72,7 @@ For the emotion detection task, the results are more nuanced due to the multi-la
 
 \subsection{Overall Performance}
 
-Table~\ref{tab:results_emotion_full} consolidates the emotion detection results for both models under both thresholding strategies on the held-out test set.
+Macro F1-scores of 0.70--0.71 are achieved by both models under their best thresholding strategies, with \acs{RoBERTa}-large (per-class, 0.7041) and \acs{ELECTRA}-large (per-class, 0.7036) performing essentially at parity. These results are lower than the binary phishing detection scores, which is expected: multi-label classification over eight classes is an inherently harder problem, class imbalance across the eight emotion categories is more pronounced than in the near-balanced binary corpus, and emotional annotation is a subjective task with inherent inter-annotator disagreement that introduces label noise. Table~\ref{tab:results_emotion_full} consolidates the emotion detection results for both models under both thresholding strategies on the held-out test set.
 
 \begin{table}[htbp]
 \centering
@@ -93,8 +91,6 @@ Table~\ref{tab:results_emotion_full} consolidates the emotion detection results 
 \end{tabular}%
 }
 \end{table}
-
-Macro F1-scores of 0.70--0.71 are achieved by both models under their best thresholding strategies, with \acs{RoBERTa}-large (per-class, 0.7041) and \acs{ELECTRA}-large (per-class, 0.7036) performing essentially at parity. These results are lower than the binary phishing detection scores, which is expected: multi-label classification over eight classes is an inherently harder problem, class imbalance across the eight emotion categories is more pronounced than in the near-balanced binary corpus, and emotional annotation is a subjective task with inherent inter-annotator disagreement that introduces label noise.
 
 \subsection{Exact Match vs.\ Macro F1}
 

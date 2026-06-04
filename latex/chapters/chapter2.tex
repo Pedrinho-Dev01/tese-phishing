@@ -11,9 +11,7 @@ A thorough understanding of email communication's technical architecture and sec
 
 Electronic mail (e-mail) represents one of the most enduring and ubiquitous forms of digital communication, with an estimated 4.37 billion users worldwide and over 347 billion emails sent daily as of 2023\cite{statista_email}. Despite the proliferation of alternative communication platforms, email remains the dominant medium for formal business communication, personal correspondence, and increasingly, as a primary vector for sophisticated cyber attacks.
 
-The technical architecture of email is governed by a suite of Internet standards that define message format, transmission protocols, and security mechanisms. At its core, the Internet Message Format standard (\ac{RFC} 5322) specifies the structure of email messages, including mandatory header fields (From, Date, To) and optional fields (Subject, Reply-To, CC, BCC) that provide metadata about message routing and handling \cite{rfc5322}. 
-
-This specification was subsequently updated by \acs{RFC} 6854 to support group syntax in sender fields, enabling more flexible representation of multiple authors or organizational senders \cite{rfc6854}.
+The technical architecture of email is governed by a suite of Internet standards that define message format, transmission protocols, and security mechanisms. At its core, the Internet Message Format standard (\ac{RFC} 5322) specifies the structure of email messages, including mandatory header fields (From, Date, To) and optional fields (Subject, Reply-To, CC, BCC) that provide metadata about message routing and handling \cite{rfc5322}, subsequently updated by \acs{RFC} 6854 to support group syntax in sender fields, enabling more flexible representation of multiple authors or organizational senders \cite{rfc6854}.
 
 Email messages are typically stored and exchanged using the .eml file format, which encapsulates the complete message structure including headers, body content, and attachments according to the \ac{MIME} standard. This format preserves forensic information such as authentication results (\ac{SPF}, \ac{DKIM}, \ac{DMARC} records), complete routing paths (Received headers), message identifiers, and content characteristics that are essential for both manual analysis and automated detection systems. The preservation of this metadata makes .eml files particularly valuable for research purposes, as they provide access to the full spectrum of features that can be leveraged for phishing detection.
 
@@ -27,9 +25,7 @@ Second, despite the existence of authentication protocols like \ac{SPF}, \ac{DKI
 
 Third, modern email systems support \ac{HTML} rendering, embedded images, clickable links, and attachments, providing multiple distinct avenues for delivering malicious content. This technical richness creates numerous attack surfaces that can be exploited through various techniques including malicious links that redirect to phishing sites, weaponized attachments containing ransomware or spyware, embedded tracking pixels for reconnaissance and victim profiling, and CSS-based rendering tricks designed to obfuscate malicious content from both automated security scanners and human analysts.
 
-Finally, attackers can easily automate the creation and distribution of phishing emails at scale, enabling campaigns that target thousands or millions of recipients with minimal cost or effort per recipient. This asymmetry between the attacker's investment and potential return makes email-based attacks economically attractive and persistent, allowing threat actors to maintain active campaigns despite defensive countermeasures.
-
-These vulnerabilities collectively underscore the need for robust, multi-layered detection mechanisms that can identify malicious emails before they reach end users and cause harm.
+Finally, attackers can easily automate the creation and distribution of phishing emails at scale, enabling campaigns that target thousands or millions of recipients with minimal cost or effort per recipient. This asymmetry between the attacker's investment and potential return makes email-based attacks economically attractive and persistent, allowing threat actors to maintain active campaigns despite defensive countermeasures. These vulnerabilities collectively underscore the need for robust, multi-layered detection mechanisms that can identify malicious emails before they reach end users and cause harm.
 
 \section{Phishing: Taxonomy, Evolution, and Impact}
 
@@ -324,6 +320,4 @@ Several key themes emerge from this review. First, phishing is fundamentally a f
 
 Second, there has been a clear evolution toward representation learning. Detection approaches have progressed from manual rule creation and engineered feature extraction to automated representation learning via transformers. Each generation has improved performance but also introduced new challenges, with current transformer-based systems achieving impressive results, yet requiring large-scale training data and remaining vulnerable to adversarial evasion.
 
-Third, state-of-the-art systems increasingly integrate multiple information sources, such as textual content, metadata, URLs, and structure, recognizing that sophisticated attacks can evade single-modality detection but struggle to simultaneously satisfy all constraints.
-
-Finally, despite the centrality of emotional manipulation to phishing success, sentiment analysis remains underexplored.
+Finally, state-of-the-art systems increasingly integrate multiple information sources, such as textual content, metadata, URLs, and structure, recognizing that sophisticated attacks can evade single-modality detection but struggle to simultaneously satisfy all constraints.

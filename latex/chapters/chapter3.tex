@@ -20,9 +20,7 @@ LLM-based generation used systematic prompt engineering with few-shot learning p
 \end{tcolorbox}
 
 This methodology produced a balanced corpus of 10,000 samples with uniform distribution across fourteen emotional categories ($\sim$
-714 per category). The LLM generation process, conditioned on the baseline corpus exemplars, ensured consistency with established phishing patterns while maintaining emotional category fidelity. The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2020practical}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}.
-
-Below is an example of a generated email for the emotion ``Admiration'':
+714 per category). The LLM generation process, conditioned on the baseline corpus exemplars, ensured consistency with established phishing patterns while maintaining emotional category fidelity. The stratified sampling ensures statistical robustness and mitigates class imbalance issues \cite{mohammad2020practical}, providing sufficient statistical power for reliable model evaluation \cite{cohen1988statistical}. Below is an example of a generated email for the emotion ``Admiration'':
 
 \begin{tcolorbox}[colback=gray!5, colframe=gray!40, title={Example Email — Admiration}]
 \obeylines
@@ -46,9 +44,7 @@ Warmest regards,
 
 \section{Annotation Framework and Guidelines}
 
-To aid in the annotation process, we used the Doccano collaborative annotation platform \cite{doccano}, which provides an intuitive interface for multi-label classification tasks and supports distributed annotation workflows, including the usage of annotation guidelines to ensure consistency during the annotation process.  
-
-This platform was deployed on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
+To aid in the annotation process, we used the Doccano collaborative annotation platform \cite{doccano}, which provides an intuitive interface for multi-label classification tasks and supports distributed annotation workflows, including the usage of annotation guidelines to ensure consistency during the annotation process. This platform was deployed on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
 
 \subsection{Dataset Preparation}
 
@@ -80,8 +76,7 @@ The annotation phase followed established collaborative annotation principles \c
 
 The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2019content}. 
 
-\newpage
-\section{First Annotation Group Results}
+\subsection{First Annotation Group Results}
 Due to time constraints, only 2,500 samples have been annotated with emotional labels, with statistics provided in Figure \ref{fig:annotation_round_1}. The current distribution shows a reasonable balance across emotional categories, though some categories (e.g., ``UNSURE'') are underrepresented, likely due to the inherent ambiguity in certain samples. 
 
 \begin{figure}[ht]
@@ -193,3 +188,17 @@ There are 2 cases present in the dataset that are ambiguous and need to be resol
 \end{itemize}
 
 The approach used to resolve both these issues is the usage of a third annotator, which in this situation, is the administrator of the annotation process. The administrator manually reviewed all the emails that received different labels from the two annotation groups, as well as all the emails that received the ``UNSURE'' label. The administrator then assigned a final emotional label to each of these emails based on their judgment and the annotation guidelines.
+
+\begin{table}[htbp]
+\centering
+\small
+\caption{Annotation disagreement example}
+\label{tab:annotation_disagreement}
+\begin{tabular}{p{10cm}cc}
+\hline
+\textbf{Email Text} & \textbf{Annotation 1} & \textbf{Annotation 2} \\
+\hline
+\textit{Subject: Your Security is Our Priority} --- phishing-style email asking the recipient to click a link to ``update account details'', while reassuring that sensitive information will never be requested via email. & relief & fear \\
+\hline
+\end{tabular}
+\end{table}
