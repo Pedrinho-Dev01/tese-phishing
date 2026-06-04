@@ -46,7 +46,9 @@ Warmest regards,
 
 \section{Annotation Framework and Guidelines}
 
-We developed a comprehensive annotation framework following established best practices \cite{artstein2017annotation,oxford2014corpus} to optimize inter-annotator agreement, minimize bias, and establish clear decision criteria for emotional category assignment.
+To aid in the annotation process, we used the Doccano collaborative annotation platform \cite{doccano}, which provides an intuitive interface for multi-label classification tasks and supports distributed annotation workflows, including the usage of annotation guidelines to ensure consistency during the annotation process.  
+
+This platform was deployed on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
 
 \subsection{Dataset Preparation}
 
@@ -76,7 +78,7 @@ Each category was operationally defined with precise criteria and exemplars from
 
 The annotation phase followed established collaborative annotation principles \cite{fort2011amazon}. All generated samples received explicit emotional category labels during the LLM generation process, with each sample labeled based on the emotional category prompt provided to the model. However, comprehensive manual validation was necessary to ensure accuracy and eliminate systematic biases inherent in synthetic generation \cite{shirazi2023adversarial}.
 
-The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2019content}. We deployed the Doccano collaborative platform \cite{doccano} on DigitalOcean infrastructure \cite{digitalocean}, following best practices for distributed annotation workflows \cite{hovy2006ontonotes}.
+The corpus scale (10,000 samples) required multi-annotator processing to enhance reliability and minimize individual bias \cite{krippendorff2019content}. 
 
 \newpage
 \section{First Annotation Group Results}
@@ -150,7 +152,7 @@ proportional usage between the two rounds (see $\Delta$pp column).
 
 \begin{table}[ht]
     \centering
-    \caption{Per-label annotation counts, proportions, and proportion-based Cohen's $\kappa$
+    \caption[Per-label inter-annotator agreement]{Per-label annotation counts, proportions, and proportion-based Cohen's $\kappa$
              across the two annotation rounds. $\Delta$pp denotes the shift in percentage
              points from round~1 to round~2.}
     \label{tab:iaa_perlabel}
@@ -182,3 +184,6 @@ proportional usage between the two rounds (see $\Delta$pp column).
         \bottomrule
     \end{tabular}
 \end{table}
+
+\section{Ambiguity Analysis}
+In certain cases, annotators expressed uncertainty regarding the emotional classification of specific samples, leading to the assignment of the ``UNSURE'' label. 

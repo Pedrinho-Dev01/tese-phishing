@@ -5,6 +5,8 @@ This chapter provides a comprehensive examination of the current state of resear
 
 \section{Email Communication: Technical Foundations and Security Implications}
 
+A thorough understanding of email communication's technical architecture and security implications is essential for contextualizing the challenges and opportunities in phishing detection research. This section explores the fundamental components of email systems, the standards governing message format and transmission, and the inherent vulnerabilities that make email a persistent attack vector.
+
 \subsection{Email Architecture and Standards}
 
 Electronic mail (e-mail) represents one of the most enduring and ubiquitous forms of digital communication, with an estimated 4.37 billion users worldwide and over 347 billion emails sent daily as of 2023\cite{statista_email}. Despite the proliferation of alternative communication platforms, email remains the dominant medium for formal business communication, personal correspondence, and increasingly, as a primary vector for sophisticated cyber attacks.
@@ -31,6 +33,8 @@ These vulnerabilities collectively underscore the need for robust, multi-layered
 
 \section{Phishing: Taxonomy, Evolution, and Impact}
 
+This section provides a comprehensive overview of phishing as a cyber attack vector, including its definition, taxonomy, prevalence, economic impact, and the evolution of attack techniques over time. Understanding these dimensions is critical for contextualizing the challenges faced by detection systems and the importance of ongoing research in this area.
+
 \subsection{Definition and Taxonomy}
 
 Phishing is a form of cyber attack in which adversaries attempt to deceive individuals into divulging sensitive information, such as credentials, financial details, or personal data, by masquerading as trustworthy entities through electronic communication. While email remains the predominant delivery mechanism, phishing has expanded to encompass SMS-based variants known as smishing, voice-based attacks called vishing, and attacks through social media platforms, reflecting the attack methodology's adaptability to different communication channels.
@@ -48,7 +52,7 @@ According to the \ac{APWG}, phishing attacks experienced a notable decline in 20
 \begin{figure}[ht]
     \centering
     \includegraphics[width=0.85\textwidth]{figs/phishing_trends.png}
-    \caption{Temporal trends in reported phishing attacks (2020-2024). Source: Anti-Phishing Working Group (APWG) quarterly reports.}
+    \caption[Temporal trends in reported phishing attacks (2020-2024)]{Temporal trends in reported phishing attacks (2020-2024). Source: Anti-Phishing Working Group (APWG) quarterly reports.}
     \label{fig:phishing_trends}
 \end{figure}
 
@@ -87,6 +91,8 @@ Traditional content filtering approaches, including spam filters and rule-based 
 The limitations of these traditional defenses have driven significant research interest in machine learning and deep learning approaches that can identify phishing attempts based on learned patterns rather than explicit rules, and that can potentially detect novel attacks that have not been previously observed.
 
 \section{Machine Learning and Deep Learning Approaches to Phishing Detection}
+
+The application of machine learning to phishing detection has evolved through several distinct generations, reflecting advances in algorithmic techniques, computational resources, and the availability of training data. This section traces the historical development of ML-based phishing detection systems, highlighting key milestones, methodological shifts, and the current state of the art.
 
 \subsection{First Generation: Rule-Based and Blacklist Systems}
 
