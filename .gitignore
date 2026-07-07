@@ -17,3 +17,7 @@ results_roberta_emotion
 users.txt
 current_dataset_1.csv
 current_dataset_2.csv
+thesis_defense.txt
+.gitignore
+thesis_defense.pptx
+~$thesis_defense.pptx

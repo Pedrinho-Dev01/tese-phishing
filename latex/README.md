@@ -5,7 +5,7 @@ A spam detection and emotion analysis tool for `.eml` email files, powered by an
 ## What it does
 
 - **Spam detection** — classifies emails as ham, maybe spam, or spam using an averaged ensemble of two binary classifiers, each with its own calibrated threshold.
-- **Emotion analysis** — detects up to 8 consolidated emotions (positive arousal, warmth, threat, curiosity, confusion, sadness, relief, neutral) using a multi-label ensemble with per-class thresholds.
+- **Emotion analysis** — detects up to 7 consolidated emotions (positive arousal, warmth, threat, curiosity, confusion, sadness, relief) using a multi-label ensemble with per-class thresholds.
 - **Web UI** — drag-and-drop `.eml` files onto the frontend and get instant results with animated probability bars and per-model breakdowns.
 - **Chrome extension** — scan emails open in Gmail or Outlook Web directly from the browser toolbar.
 
@@ -15,8 +15,8 @@ A spam detection and emotion analysis tool for `.eml` email files, powered by an
 |---|---|---|
 | RoBERTa-Large (spam) | `Dpedrinho01/trained_roberta_large` | Binary spam/ham |
 | ELECTRA-Large (spam) | `Dpedrinho01/trained_electra_large` | Binary spam/ham |
-| RoBERTa-Large (emotion) | `Dpedrinho01/trained_roberta_emotion` | Multi-label emotion (8 classes) |
-| ELECTRA-Large (emotion) | `Dpedrinho01/trained_electra_emotion` | Multi-label emotion (8 classes) |
+| RoBERTa-Large (emotion) | `Dpedrinho01/trained_roberta_emotion` | Multi-label emotion (7 classes) |
+| ELECTRA-Large (emotion) | `Dpedrinho01/trained_electra_emotion` | Multi-label emotion (7 classes) |
 
 Each model ships a config file (`threshold_config.json` for spam, `model_config.json` for emotion) that is loaded from the Hugging Face Hub at startup.
 

@@ -72,11 +72,11 @@ For the emotion detection task, the results are more nuanced due to the multi-la
 
 \subsection{Overall Performance}
 
-Macro F1-scores of 0.70--0.71 are achieved by both models under their best thresholding strategies, with \acs{RoBERTa}-large (per-class, 0.7041) and \acs{ELECTRA}-large (per-class, 0.7036) performing essentially at parity. These results are lower than the binary phishing detection scores, which is expected: multi-label classification over eight classes is an inherently harder problem, class imbalance across the eight emotion categories is more pronounced than in the near-balanced binary corpus, and emotional annotation is a subjective task with inherent inter-annotator disagreement that introduces label noise. Table~\ref{tab:results_emotion_full} consolidates the emotion detection results for both models under both thresholding strategies on the held-out test set.
+Macro F1-scores of 0.70--0.71 are achieved by both models under their best thresholding strategies, with \acs{RoBERTa}-large (per-class, 0.7041) and \acs{ELECTRA}-large (per-class, 0.7036) performing essentially at parity. These results are lower than the binary phishing detection scores, which is expected: multi-label classification over seven classes is an inherently harder problem, class imbalance across the seven emotion categories is more pronounced than in the near-balanced binary corpus, and emotional annotation is a subjective task with inherent inter-annotator disagreement that introduces label noise. Table~\ref{tab:results_emotion_full} consolidates the emotion detection results for both models under both thresholding strategies on the held-out test set.
 
 \begin{table}[htbp]
 \centering
-\caption[Emotion detection results on the held-out test set]{Emotion detection results on the held-out test set. EM denotes Exact Match accuracy. All macro metrics are computed across the eight consolidated emotion classes.}
+\caption[Emotion detection results on the held-out test set]{Emotion detection results on the held-out test set. EM denotes Exact Match accuracy. All macro metrics are computed across the seven consolidated emotion classes.}
 \label{tab:results_emotion_full}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
@@ -94,7 +94,7 @@ Macro F1-scores of 0.70--0.71 are achieved by both models under their best thres
 
 \subsection{Exact Match vs.\ Macro F1}
 
-A notable feature of the results is the large gap between exact match accuracy and macro F1. Exact match, which requires all predicted labels for a sample to exactly equal the ground truth set, ranges from 0.28 to 0.33 across all configurations. Macro F1 is substantially higher at 0.69--0.70. This discrepancy is characteristic of multi-label problems where label sets are non-trivial: a prediction that is correct for seven of eight classes contributes zero to exact match but contributes substantially to per-class F1. In practice, macro F1 is the more informative metric here, as the goal is for the system to correctly identify which emotional manipulation tactics are present, even if it occasionally misses a co-occurring secondary signal. A system that reliably identifies the dominant emotional tone (e.g., \texttt{threat}) while occasionally missing a secondary one (e.g., \texttt{confusion}) is still useful to an end user assessing a suspicious email.
+A notable feature of the results is the large gap between exact match accuracy and macro F1. Exact match, which requires all predicted labels for a sample to exactly equal the ground truth set, ranges from 0.28 to 0.33 across all configurations. Macro F1 is substantially higher at 0.69--0.70. This discrepancy is characteristic of multi-label problems where label sets are non-trivial: a prediction that is correct for six of seven classes contributes zero to exact match but contributes substantially to per-class F1. In practice, macro F1 is the more informative metric here, as the goal is for the system to correctly identify which emotional manipulation tactics are present, even if it occasionally misses a co-occurring secondary signal. A system that reliably identifies the dominant emotional tone (e.g., \texttt{threat}) while occasionally missing a secondary one (e.g., \texttt{confusion}) is still useful to an end user assessing a suspicious email.
 
 The low exact match values also reflect the inherent ambiguity of multi-label emotion annotation: even human annotators frequently disagree about which secondary emotions are present in a given email, and the model's partial predictions may often be reasonable interpretations of the text even where they do not match the ground truth set exactly.
 
@@ -172,7 +172,7 @@ three lower-$\kappa$ labels is best understood as reflecting genuine semantic am
 category boundaries in the phishing domain, rather than annotator unreliability. The
 taxonomy consolidation described in Section~\ref{sec:emotion_taxonomy} was specifically
 designed to absorb this ambiguity by merging the most confusable categories into broader
-semantically coherent classes, and the resulting eight-class schema is the one for which
+semantically coherent classes, and the resulting seven-class schema is the one for which
 the models report macro F1-scores of 0.70. The residual label noise on \textit{Confusion}
 and \textit{Sadness}, which were retained as standalone classes, is consistent with
 their being the harder emotion classes to detect, and contributes to the per-class
@@ -198,7 +198,7 @@ For emotion detection, no directly comparable prior work exists that frames the 
 
 The macro F1-scores of 0.70 for emotion detection, while lower than the binary classification results, are encouraging for a task of this difficulty. In the Gone Phishing system, the emotion detection component is presented as a complement to, not a replacement for, the spam detection result. A user who receives a maybe spam verdict accompanied by a \texttt{threat} and \texttt{positive\_arousal} profile has more actionable information than one who receives only the borderline verdict, since the emotional profile contextualises the spam probability and may help the user make a more informed decision about whether to engage with the email.
 
-From a security awareness perspective, the emotion detection output also serves an educational function. Explicitly naming the manipulation tactics present in a detected phishing attempt, and visually displaying the probability distribution across all eight emotional dimensions, helps users develop a more nuanced mental model of what phishing looks like in practice. Over time, this kind of feedback may improve users' ability to recognise phishing attempts in contexts where automated detection is not available, such as on devices or platforms not covered by the extension.
+From a security awareness perspective, the emotion detection output also serves an educational function. Explicitly naming the manipulation tactics present in a detected phishing attempt, and visually displaying the probability distribution across all seven emotional dimensions, helps users develop a more nuanced mental model of what phishing looks like in practice. Over time, this kind of feedback may improve users' ability to recognise phishing attempts in contexts where automated detection is not available, such as on devices or platforms not covered by the extension.
 
 \subsection{Limitations of the Current System}
 
