@@ -14,7 +14,7 @@ Merge strategy (only positive phi pairs + semantic sense):
   relief                                → relief     (kept)
   neutral + unsure                      → DROPPED    (too rare, low signal)
 
-Result: 15 classes → 8 classes
+Result: 14 classes → 7 classes
 
 Usage:
     python merge_labels.py
